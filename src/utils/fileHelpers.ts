@@ -55,7 +55,7 @@ export interface TypeBadgeConfig {
   bgColor: string;
   textColor: string;
   label: string;
-  icon: string;
+  typeKey: DocumentType;
   badgeBg: string;
 }
 
@@ -67,7 +67,7 @@ export function getTypeBadgeConfig(type: DocumentType, ext: FileExtension): Type
         bgColor: 'bg-[#E65C56]',
         textColor: 'text-white',
         label: 'PDF',
-        icon: 'picture_as_pdf',
+        typeKey: 'pdf',
         badgeBg: 'bg-[#E65C56]',
       };
     case 'word':
@@ -75,7 +75,7 @@ export function getTypeBadgeConfig(type: DocumentType, ext: FileExtension): Type
         bgColor: 'bg-[#3478D4]',
         textColor: 'text-white',
         label: cleanExt.toUpperCase() || 'DOCX',
-        icon: 'description',
+        typeKey: 'word',
         badgeBg: 'bg-[#3478D4]',
       };
     case 'excel':
@@ -83,7 +83,7 @@ export function getTypeBadgeConfig(type: DocumentType, ext: FileExtension): Type
         bgColor: 'bg-[#249B65]',
         textColor: 'text-white',
         label: cleanExt.toUpperCase() || 'XLSX',
-        icon: 'table_chart',
+        typeKey: 'excel',
         badgeBg: 'bg-[#249B65]',
       };
     case 'powerpoint':
@@ -91,7 +91,7 @@ export function getTypeBadgeConfig(type: DocumentType, ext: FileExtension): Type
         bgColor: 'bg-[#D88B32]',
         textColor: 'text-white',
         label: cleanExt.toUpperCase() || 'PPTX',
-        icon: 'slideshow',
+        typeKey: 'powerpoint',
         badgeBg: 'bg-[#D88B32]',
       };
     case 'markdown':
@@ -99,7 +99,7 @@ export function getTypeBadgeConfig(type: DocumentType, ext: FileExtension): Type
         bgColor: 'bg-[#8A65C9]',
         textColor: 'text-white',
         label: 'MD',
-        icon: 'code_blocks',
+        typeKey: 'markdown',
         badgeBg: 'bg-[#8A65C9]',
       };
     case 'text':
@@ -107,7 +107,7 @@ export function getTypeBadgeConfig(type: DocumentType, ext: FileExtension): Type
         bgColor: 'bg-[#8A65C9]',
         textColor: 'text-white',
         label: 'TXT',
-        icon: 'article',
+        typeKey: 'text',
         badgeBg: 'bg-[#8A65C9]',
       };
     default:
@@ -115,15 +115,13 @@ export function getTypeBadgeConfig(type: DocumentType, ext: FileExtension): Type
         bgColor: 'bg-[#605C48]',
         textColor: 'text-white',
         label: cleanExt.toUpperCase() || 'FILE',
-        icon: 'draft',
+        typeKey: 'other',
         badgeBg: 'bg-[#605C48]',
       };
   }
 }
 
-// Generate valid minimal PDF sample ArrayBuffer or Data URI for default vault items
 export function generateSamplePdfDataUri(): string {
-  // A clean 100% valid 1-page PDF string encoded as data URI
   const pdfContent = `%PDF-1.4
 1 0 obj
 << /Type /Catalog /Pages 2 0 R >>

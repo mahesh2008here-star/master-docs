@@ -1,7 +1,24 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { 
+  Search, 
+  X, 
+  SlidersHorizontal, 
+  FolderOpen, 
+  ArrowUpDown, 
+  List, 
+  Grid, 
+  Lock, 
+  Star, 
+  MoreVertical, 
+  Eye, 
+  Trash2, 
+  PlusCircle, 
+  ShieldCheck 
+} from 'lucide-react';
 import { DocumentItem, DocumentType } from '../types/document';
 import { getTypeBadgeConfig, formatFileSize, formatDateLabel } from '../utils/fileHelpers';
+import { DocumentIcon } from '../components/common/DocumentIcon';
 
 interface FilesScreenProps {
   documents: DocumentItem[];
@@ -89,25 +106,25 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.2 }}
-      className="flex flex-col w-full space-y-4 pb-28"
+      className="flex flex-col w-full space-y-4 pb-28 min-w-0"
     >
       {/* Search Bar Input */}
       <div className="relative w-full">
         <div className="flex items-center gap-2 h-12 px-3 bg-white dark:bg-[#212019] rounded-xl retro-border retro-shadow">
-          <span className="material-symbols-outlined text-[22px] text-[#58413f] dark:text-[#c8bead]">search</span>
+          <Search className="w-5 h-5 text-[#58413f] dark:text-[#c8bead] shrink-0" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={`Search ${documents.length} offline documents...`}
-            className="w-full bg-transparent border-none text-sm font-sans text-[#1d1c11] dark:text-[#f6f1de] focus:outline-none placeholder:text-[#58413f]/60 dark:placeholder:text-[#c8bead]/60"
+            className="w-full bg-transparent border-none text-sm font-sans text-[#1d1c11] dark:text-[#f6f1de] focus:outline-none placeholder:text-[#58413f]/60 dark:placeholder:text-[#c8bead]/60 min-w-0"
           />
           {searchQuery ? (
             <button
               onClick={() => setSearchQuery('')}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-[#58413f] hover:text-[#1d1c11] cursor-pointer"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-[#58413f] hover:text-[#1d1c11] cursor-pointer shrink-0"
             >
-              <span className="material-symbols-outlined text-[18px]">close</span>
+              <X className="w-4 h-4" />
             </button>
           ) : (
             <motion.button
@@ -116,16 +133,16 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
               title="Filter & Sort"
               className="w-8 h-8 rounded-lg bg-[#f3eedc] dark:bg-[#333128] retro-border-sm flex items-center justify-center text-[#1d1c11] dark:text-[#f6f1de] retro-shadow-sm cursor-pointer shrink-0"
             >
-              <span className="material-symbols-outlined text-[18px]">tune</span>
+              <SlidersHorizontal className="w-4 h-4" />
             </motion.button>
           )}
         </div>
       </div>
 
       {/* Category Filter Pills */}
-      <div className="flex items-center gap-2 overflow-x-auto py-1 px-0.5 no-scrollbar">
+      <div className="flex items-center gap-2 overflow-x-auto py-1 px-0.5 no-scrollbar min-w-0">
         {[
-          { id: 'all', label: `ALL FILES (${categoryCounts.all})` },
+          { id: 'all', label: `ALL (${categoryCounts.all})` },
           { id: 'pdf', label: `PDF (${categoryCounts.pdf})` },
           { id: 'word', label: `WORD (${categoryCounts.word})` },
           { id: 'excel', label: `EXCEL (${categoryCounts.excel})` },
@@ -154,23 +171,23 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
       </div>
 
       {/* Directory Storage Status Banner */}
-      <div className="flex flex-col space-y-2">
+      <div className="flex flex-col space-y-2 min-w-0">
         <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#ede8d6] dark:bg-[#3d3a30] retro-border-sm font-heading font-bold text-[11px] text-[#1d1c11] dark:text-[#f6f1de] uppercase tracking-wider retro-shadow-sm self-start">
           DIRECTORY
         </span>
 
         <div className="p-3.5 rounded-2xl bg-[#f9f4e1] dark:bg-[#2b2921] retro-border retro-shadow flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center justify-between gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
               <div className="w-8 h-8 rounded-lg bg-white dark:bg-[#212019] retro-border-sm flex items-center justify-center text-[#1d1c11] dark:text-[#f6f1de] shrink-0 retro-shadow-sm">
-                <span className="material-symbols-outlined text-[18px]">folder_open</span>
+                <FolderOpen className="w-4 h-4" />
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de] truncate">
                   Internal Storage &gt; Documents &gt; Vault
                 </p>
-                <p className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead]">
-                  Synchronized 14 mins ago
+                <p className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] truncate">
+                  Synchronized on-device
                 </p>
               </div>
             </div>
@@ -180,32 +197,32 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
               onClick={onImportFile}
               className="px-2.5 py-1 rounded-lg bg-white dark:bg-[#212019] retro-border-sm text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-[11px] uppercase tracking-wider retro-shadow-sm cursor-pointer shrink-0"
             >
-              CHANGE ↔
+              IMPORT
             </motion.button>
           </div>
 
           <div className="pt-2 border-t border-black/10 dark:border-white/10 flex items-center justify-between font-sans text-[11px] text-[#58413f] dark:text-[#c8bead]">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#249B65] border border-[#171717] animate-pulse"></span>
-              {filteredDocs.length} FILES • 482 MB OFFLINE
+            <span className="flex items-center gap-1.5 truncate">
+              <span className="w-2 h-2 rounded-full bg-[#249B65] border border-[#171717] animate-pulse shrink-0"></span>
+              {filteredDocs.length} FILES • OFFLINE
             </span>
-            <span className="font-bold text-[#1d1c11] dark:text-[#f6f1de]">64.2 GB free</span>
+            <span className="font-bold text-[#1d1c11] dark:text-[#f6f1de] shrink-0">64 GB free</span>
           </div>
         </div>
       </div>
 
       {/* Controls Bar: Sort & View Mode Toggles */}
-      <div className="flex items-center justify-between gap-2 pt-1">
+      <div className="flex items-center justify-between gap-2 pt-1 min-w-0">
         <motion.button
           whileTap={{ scale: 0.92 }}
           onClick={toggleSort}
-          className="h-9 px-3 rounded-xl bg-white dark:bg-[#212019] retro-border-sm text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-xs uppercase tracking-wider retro-shadow-sm flex items-center gap-1.5 cursor-pointer"
+          className="h-9 px-3 rounded-xl bg-white dark:bg-[#212019] retro-border-sm text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-xs uppercase tracking-wider retro-shadow-sm flex items-center gap-1.5 cursor-pointer shrink-0"
         >
-          <span className="material-symbols-outlined text-[16px]">swap_vert</span>
-          <span>{sortBy === 'date' ? 'DATE MODIFIED' : sortBy === 'name' ? 'NAME' : 'FILE SIZE'} {sortOrder === 'asc' ? '↑' : '↓'}</span>
+          <ArrowUpDown className="w-3.5 h-3.5" />
+          <span>{sortBy === 'date' ? 'DATE' : sortBy === 'name' ? 'NAME' : 'SIZE'} {sortOrder === 'asc' ? '↑' : '↓'}</span>
         </motion.button>
 
-        <div className="flex items-center bg-[#f3eedc] dark:bg-[#333128] rounded-xl p-1 retro-border-sm retro-shadow-sm">
+        <div className="flex items-center bg-[#f3eedc] dark:bg-[#333128] rounded-xl p-1 retro-border-sm retro-shadow-sm shrink-0">
           <button
             onClick={() => setViewMode('list')}
             className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
@@ -214,7 +231,7 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
                 : 'text-[#58413f] dark:text-[#c8bead]'
             }`}
           >
-            <span className="material-symbols-outlined text-[18px]">format_list_bulleted</span>
+            <List className="w-4 h-4" />
           </button>
           <button
             onClick={() => setViewMode('grid')}
@@ -224,7 +241,7 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
                 : 'text-[#58413f] dark:text-[#c8bead]'
             }`}
           >
-            <span className="material-symbols-outlined text-[18px]">grid_view</span>
+            <Grid className="w-4 h-4" />
           </button>
         </div>
       </div>
@@ -232,7 +249,7 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
       {/* Document Library Items */}
       {filteredDocs.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-8 text-center bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl retro-border retro-shadow">
-          <span className="material-symbols-outlined text-[48px] text-[#58413f] dark:text-[#c8bead] mb-2">folder_open</span>
+          <FolderOpen className="w-12 h-12 text-[#58413f] dark:text-[#c8bead] mb-2" />
           <h3 className="font-heading font-bold text-base text-[#1d1c11] dark:text-[#f6f1de] mb-1">
             No Documents Found
           </h3>
@@ -249,7 +266,7 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
           </motion.button>
         </div>
       ) : viewMode === 'list' ? (
-        <div className="flex flex-col space-y-3">
+        <div className="flex flex-col space-y-3 min-w-0">
           {filteredDocs.map((doc) => {
             const badge = getTypeBadgeConfig(doc.type, doc.extension);
             const isMenuOpen = selectedDocForMenu === doc.id;
@@ -259,40 +276,40 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
                 key={doc.id}
                 whileTap={{ scale: 0.99 }}
                 onClick={() => onOpenDocument(doc)}
-                className="relative p-3.5 rounded-2xl bg-[#f9f4e1] dark:bg-[#2b2921] retro-border retro-shadow flex items-center justify-between gap-3 hover:bg-[#f3eedc] dark:hover:bg-[#333128] transition-colors cursor-pointer"
+                className="relative p-3.5 rounded-2xl bg-[#f9f4e1] dark:bg-[#2b2921] retro-border retro-shadow flex items-center justify-between gap-2.5 hover:bg-[#f3eedc] dark:hover:bg-[#333128] transition-colors cursor-pointer min-w-0"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="relative">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div className="relative shrink-0">
                     <div
-                      className={`w-10 h-10 rounded-xl ${badge.bgColor} retro-border-sm flex items-center justify-center text-white shrink-0 retro-shadow-sm`}
+                      className={`w-10 h-10 rounded-xl ${badge.bgColor} retro-border-sm flex items-center justify-center text-white retro-shadow-sm`}
                     >
-                      <span className="material-symbols-outlined text-[20px]">{badge.icon}</span>
+                      <DocumentIcon typeKey={badge.typeKey} className="w-5 h-5" />
                     </div>
                     {doc.isLocked && (
                       <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#171717] text-white flex items-center justify-center text-[10px]">
-                        <span className="material-symbols-outlined text-[12px]">lock</span>
+                        <Lock className="w-2.5 h-2.5" />
                       </span>
                     )}
                   </div>
 
-                  <div className="min-w-0">
-                    <span className="block font-heading font-bold text-sm text-[#1d1c11] dark:text-[#f6f1de] truncate">
+                  <div className="min-w-0 flex-1">
+                    <span className="block font-heading font-bold text-xs sm:text-sm text-[#1d1c11] dark:text-[#f6f1de] truncate">
                       {doc.name}
                     </span>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
                       {doc.isLocked && (
-                        <span className="px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-200 border border-amber-900/40 font-heading font-bold text-[9px] uppercase">
+                        <span className="px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-200 border border-amber-900/40 font-heading font-bold text-[9px] uppercase shrink-0">
                           LOCKED
                         </span>
                       )}
-                      <span className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] truncate">
-                        {formatFileSize(doc.size)} • Modified {formatDateLabel(doc.modifiedAt)}
+                      <span className="font-sans text-[10px] sm:text-[11px] text-[#58413f] dark:text-[#c8bead] truncate">
+                        {formatFileSize(doc.size)} • {formatDateLabel(doc.modifiedAt)}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                   <motion.button
                     whileTap={{ scale: 0.85 }}
                     onClick={(e) => onToggleFavorite(doc.id, e)}
@@ -301,12 +318,7 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
                       doc.isFavorite ? 'text-[#D88B32]' : 'text-[#58413f] dark:text-[#c8bead]'
                     } retro-shadow-sm cursor-pointer`}
                   >
-                    <span
-                      className="material-symbols-outlined text-[18px]"
-                      style={{ fontVariationSettings: doc.isFavorite ? "'FILL' 1" : "'FILL' 0" }}
-                    >
-                      star
-                    </span>
+                    <Star className={`w-4 h-4 ${doc.isFavorite ? 'fill-current' : ''}`} />
                   </motion.button>
 
                   <motion.button
@@ -315,7 +327,7 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
                     aria-label="More options"
                     className="w-9 h-9 rounded-xl bg-white dark:bg-[#212019] retro-border-sm flex items-center justify-center text-[#58413f] dark:text-[#c8bead] retro-shadow-sm cursor-pointer"
                   >
-                    <span className="material-symbols-outlined text-[18px]">more_vert</span>
+                    <MoreVertical className="w-4 h-4" />
                   </motion.button>
                 </div>
 
@@ -336,7 +348,7 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
                         }}
                         className="flex items-center gap-2 px-3 py-2 text-xs font-heading font-bold text-[#1d1c11] dark:text-[#f6f1de] hover:bg-[#f3eedc] dark:hover:bg-[#333128] rounded-lg text-left cursor-pointer"
                       >
-                        <span className="material-symbols-outlined text-[16px]">visibility</span>
+                        <Eye className="w-4 h-4" />
                         <span>Read Document</span>
                       </button>
 
@@ -347,7 +359,7 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
                         }}
                         className="flex items-center gap-2 px-3 py-2 text-xs font-heading font-bold text-[#1d1c11] dark:text-[#f6f1de] hover:bg-[#f3eedc] dark:hover:bg-[#333128] rounded-lg text-left cursor-pointer"
                       >
-                        <span className="material-symbols-outlined text-[16px]">star</span>
+                        <Star className="w-4 h-4" />
                         <span>{doc.isFavorite ? 'Remove Saved' : 'Save to Vault'}</span>
                       </button>
 
@@ -359,7 +371,7 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
                         style={{ color: 'var(--primary-red)' }}
                         className="flex items-center gap-2 px-3 py-2 text-xs font-heading font-bold hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg text-left cursor-pointer"
                       >
-                        <span className="material-symbols-outlined text-[16px]">delete</span>
+                        <Trash2 className="w-4 h-4" />
                         <span>Delete Reference</span>
                       </button>
                     </motion.div>
@@ -371,7 +383,7 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
         </div>
       ) : (
         /* Grid View */
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 min-w-0">
           {filteredDocs.map((doc) => {
             const badge = getTypeBadgeConfig(doc.type, doc.extension);
             return (
@@ -379,33 +391,28 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
                 key={doc.id}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onOpenDocument(doc)}
-                className="p-3.5 rounded-2xl bg-[#f9f4e1] dark:bg-[#2b2921] retro-border retro-shadow flex flex-col justify-between h-36 hover:bg-[#f3eedc] dark:hover:bg-[#333128] transition-colors cursor-pointer"
+                className="p-3.5 rounded-2xl bg-[#f9f4e1] dark:bg-[#2b2921] retro-border retro-shadow flex flex-col justify-between h-36 hover:bg-[#f3eedc] dark:hover:bg-[#333128] transition-colors cursor-pointer min-w-0"
               >
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between min-w-0">
                   <div
                     className={`w-9 h-9 rounded-xl ${badge.bgColor} retro-border-sm flex items-center justify-center text-white shrink-0 retro-shadow-sm`}
                   >
-                    <span className="material-symbols-outlined text-[18px]">{badge.icon}</span>
+                    <DocumentIcon typeKey={badge.typeKey} className="w-4 h-4" />
                   </div>
 
                   <button
                     onClick={(e) => onToggleFavorite(doc.id, e)}
-                    className="w-7 h-7 rounded-lg bg-white dark:bg-[#212019] retro-border-sm flex items-center justify-center text-[#58413f] dark:text-[#c8bead] cursor-pointer"
+                    className="w-7 h-7 rounded-lg bg-white dark:bg-[#212019] retro-border-sm flex items-center justify-center text-[#58413f] dark:text-[#c8bead] cursor-pointer shrink-0"
                   >
-                    <span
-                      className="material-symbols-outlined text-[14px]"
-                      style={{ fontVariationSettings: doc.isFavorite ? "'FILL' 1" : "'FILL' 0" }}
-                    >
-                      star
-                    </span>
+                    <Star className={`w-3.5 h-3.5 ${doc.isFavorite ? 'fill-current text-[#D88B32]' : ''}`} />
                   </button>
                 </div>
 
-                <div>
-                  <span className="block font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de] line-clamp-2 leading-tight">
+                <div className="min-w-0">
+                  <span className="block font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de] line-clamp-2 leading-tight truncate">
                     {doc.name}
                   </span>
-                  <span className="font-sans text-[10px] text-[#58413f] dark:text-[#c8bead] mt-1 block">
+                  <span className="font-sans text-[10px] text-[#58413f] dark:text-[#c8bead] mt-1 block truncate">
                     {formatFileSize(doc.size)}
                   </span>
                 </div>
@@ -416,20 +423,20 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
       )}
 
       {/* Primary Action Button: Import File to Vault */}
-      <div className="pt-2">
+      <div className="pt-2 min-w-0">
         <motion.button
           whileTap={{ scale: 0.96 }}
           whileHover={{ scale: 1.01 }}
           onClick={onImportFile}
           style={{ backgroundColor: 'var(--primary-red)' }}
-          className="w-full inline-flex items-center justify-center gap-2 h-14 rounded-2xl text-white font-heading font-bold text-sm uppercase tracking-wider retro-border retro-shadow cursor-pointer transition-colors"
+          className="w-full inline-flex items-center justify-center gap-2 h-12 sm:h-14 rounded-2xl text-white font-heading font-bold text-xs sm:text-sm uppercase tracking-wider retro-border retro-shadow cursor-pointer transition-colors"
         >
-          <span className="material-symbols-outlined text-[24px]">add_circle</span>
-          <span>+ IMPORT FILE TO VAULT</span>
+          <PlusCircle className="w-5 h-5 shrink-0" />
+          <span>IMPORT FILE TO VAULT</span>
         </motion.button>
-        <p className="text-center font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] mt-2 flex items-center justify-center gap-1">
-          <span className="material-symbols-outlined text-[14px]">graphic_eq</span>
-          Offline First: Files stay encrypted locally on device
+        <p className="text-center font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] mt-2 flex items-center justify-center gap-1 truncate">
+          <ShieldCheck className="w-3.5 h-3.5 text-[#249B65] shrink-0" />
+          <span>Offline First: Files stay encrypted locally on device</span>
         </p>
       </div>
     </motion.div>
