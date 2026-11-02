@@ -1,2 +1,4 @@
 include ':app'
 rootProject.name = "MASTER DOCS"
+
+apply from: 'capacitor.settings.gradle'
