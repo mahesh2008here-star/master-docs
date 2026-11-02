@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --bg-surface: #fff9e7;
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #f9f4e1;
+    --surface-container: #f3eedc;
+    --surface-container-high: #ede8d6;
+    --surface-container-highest: #e7e2d1;
+    --text-on-surface: #1d1c11;
+    --text-on-surface-variant: #58413f;
+    --primary-red: #a92f2e;
+    --border-dark: #171717;
+  }
+
+  .dark {
+    --bg-surface: #181711;
+    --surface-container-lowest: #212019;
+    --surface-container-low: #2b2921;
+    --surface-container: #333128;
+    --surface-container-high: #3d3a30;
+    --surface-container-highest: #474439;
+    --text-on-surface: #f6f1de;
+    --text-on-surface-variant: #c8bead;
+    --primary-red: #ca4843;
+    --border-dark: #0f0e0a;
+  }
+
+  html, body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    overscroll-behavior-y: none;
+    background-color: var(--bg-surface);
+    color: var(--text-on-surface);
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-heading {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+  }
+}
+
+/* Custom retro tactile utilities */
+.retro-border {
+  border: 2.5px solid #171717;
+}
+
+.retro-border-sm {
+  border: 2px solid #171717;
+}
+
+.dark .retro-border,
+.dark .retro-border-sm {
+  border-color: #38352b;
+}
+
+.retro-shadow {
+  box-shadow: 3px 3px 0px #171717;
+}
+
+.retro-shadow-sm {
+  box-shadow: 2px 2px 0px #171717;
+}
+
+.retro-shadow-lg {
+  box-shadow: 4px 4px 0px #171717;
+}
+
+.dark .retro-shadow,
+.dark .retro-shadow-sm,
+.dark .retro-shadow-lg {
+  box-shadow-color: #000000;
+}
+
+.btn-retro-active {
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.btn-retro-active:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #171717;
+}
+
+/* Safe area insets for mobile */
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.pt-safe {
+  padding-top: max(0.5rem, env(safe-area-inset-top));
+}
+
+/* Dynamic accent color utilities */
+.bg-primary-accent {
+  background-color: var(--primary-red) !important;
+}
+
+.text-primary-accent {
+  color: var(--primary-red) !important;
+}
+
+.border-primary-accent {
+  border-color: var(--primary-red) !important;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}

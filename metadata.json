@@ -1,0 +1,6 @@
+{
+  "name": "MASTER DOCS",
+  "description": "All-in-one document reader for Android with retro-inspired interface, liquid glass dock, and offline document reading.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MASTER DOCS</string>
+    <string name="title_activity_main">MASTER DOCS</string>
+    <string name="package_name">com.masterdocs.reader</string>
+    <string name="custom_url_scheme">com.masterdocs.reader</string>
+</resources>
