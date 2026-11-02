@@ -39,23 +39,34 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
+          accept-android-sdk-licenses: true
 
       - name: Capacitor Android Sync
         run: npx cap sync android
 
-      - name: Build Debug APK
+      - name: Build Android APKs (Debug & Release)
         run: |
           cd android
           chmod +x gradlew || true
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug assembleRelease --stacktrace
 
-      - name: Verify Debug APK Output
+      - name: Verify APK Output
         run: |
           ls -lh android/app/build/outputs/apk/debug/ || true
+          ls -lh android/app/build/outputs/apk/release/ || true
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Master-Docs-debug.apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: warn
+
+      - name: Upload Unsigned Release APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Master-Docs-release.apk
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: warn
