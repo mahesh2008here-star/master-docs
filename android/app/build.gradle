@@ -2,12 +2,12 @@ apply plugin: 'com.android.application'
 
 android {
     namespace 'com.masterdocs.reader'
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.masterdocs.reader"
         minSdk 23
-        targetSdk 34
+        targetSdk 36
         versionCode 1
         versionName "1.0.0"
 
