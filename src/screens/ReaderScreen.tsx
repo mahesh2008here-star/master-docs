@@ -426,8 +426,8 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
                 )}
               </motion.div>
             </AnimatePresence>
-          ) : doc.type === 'powerpoint' ? (
-            /* Presentation Slide Viewer */
+           ) : doc.type === 'powerpoint' ? (
+            /* Presentation Slide Viewer with Embedded Images */
             <AnimatePresence mode="wait">
               <motion.div 
                 key={currentPage}
@@ -445,6 +445,22 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
                     <h2 className="font-heading text-xl sm:text-2xl font-bold">
                       {slides[currentPage - 1]?.title || 'Slide Title'}
                     </h2>
+                    
+                    {/* Render embedded slide images if present */}
+                    {slides[currentPage - 1]?.images && slides[currentPage - 1].images!.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 my-2">
+                        {slides[currentPage - 1].images!.map((imgSrc, imgIdx) => (
+                          <div key={imgIdx} className="rounded-lg overflow-hidden retro-border-sm bg-white shadow-xs p-1">
+                            <img
+                              src={imgSrc}
+                              alt={`Slide ${currentPage} graphic ${imgIdx + 1}`}
+                              className="w-full h-auto object-contain max-h-[240px] rounded"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     <ul className="flex flex-col gap-2">
                       {slides[currentPage - 1]?.bulletPoints.map((point, idx) => (
                         <li key={idx} className="font-sans text-sm flex items-start gap-2">

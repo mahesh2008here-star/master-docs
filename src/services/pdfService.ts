@@ -1,12 +1,11 @@
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Use inline worker or default worker options for pdfjs-dist
-if (typeof window !== 'undefined' && 'Worker' in window) {
+// Configure workerSrc for pdfjs-dist using cdnjs matching installed version
+if (typeof window !== 'undefined') {
   try {
-    // Set worker to self-contained blob or standard fallback if available
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
   } catch (e) {
-    // Ignore worker assignment error and allow sync fallback
+    console.warn('Failed to assign pdfjs workerSrc:', e);
   }
 }
 
@@ -18,12 +17,22 @@ export interface RenderedPdfPage {
 
 export async function renderPdfPages(
   dataUriOrArrayBuffer: string | ArrayBuffer,
-  maxPagesToShow = 25
+  maxPagesToShow = 50
 ): Promise<{ totalPages: number; pages: RenderedPdfPage[] }> {
   try {
     let loadingTask;
     if (typeof dataUriOrArrayBuffer === 'string') {
-      loadingTask = pdfjsLib.getDocument({ url: dataUriOrArrayBuffer });
+      if (dataUriOrArrayBuffer.startsWith('data:')) {
+        const base64Str = dataUriOrArrayBuffer.split(',')[1] || dataUriOrArrayBuffer;
+        const binaryStr = atob(base64Str);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        loadingTask = pdfjsLib.getDocument({ data: bytes.buffer });
+      } else {
+        loadingTask = pdfjsLib.getDocument({ url: dataUriOrArrayBuffer });
+      }
     } else {
       loadingTask = pdfjsLib.getDocument({ data: dataUriOrArrayBuffer });
     }
@@ -41,8 +50,8 @@ export async function renderPdfPages(
           .map((item: any) => item.str || '')
           .join(' ');
 
-        // Render to offscreen canvas
-        const viewport = page.getViewport({ scale: 1.2 });
+        // Render to high resolution canvas
+        const viewport = page.getViewport({ scale: 1.5 });
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
         canvas.height = viewport.height;
@@ -52,7 +61,6 @@ export async function renderPdfPages(
           const renderContext: any = {
             canvasContext: context,
             viewport: viewport,
-            canvas: canvas,
           };
           await page.render(renderContext).promise;
 
@@ -71,14 +79,14 @@ export async function renderPdfPages(
         console.warn(`Error rendering PDF page ${pageNum}:`, e);
         pages.push({
           pageNumber: pageNum,
-          textContent: `[Page ${pageNum} content rendered]`,
+          textContent: `[Page ${pageNum} rendered]`,
         });
       }
     }
 
     return { totalPages, pages };
   } catch (error) {
-    console.error('Failed to parse PDF document:', error);
+    console.error('Failed to parse PDF document with pdfjs-dist:', error);
     throw error;
   }
 }
