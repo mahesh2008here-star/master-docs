@@ -5,7 +5,6 @@ import {
   Search, 
   Info, 
   X, 
-  Lock, 
   CheckCircle, 
   ArrowDown, 
   ChevronLeft, 
@@ -20,12 +19,13 @@ import {
   Loader2
 } from 'lucide-react';
 import { DocumentItem, ReaderTheme } from '../types/document';
-import { renderPdfPages, RenderedPdfPage } from '../services/pdfService';
-import { parseDocxRawText } from '../services/docxService';
+import { parseDocxRawText, convertDocxToHtml } from '../services/docxService';
 import { parseSpreadsheetBuffer, SheetData } from '../services/spreadsheetService';
-import { parsePresentationText, SlideItem } from '../services/presentationService';
+import { parsePresentationText, parsePptxArrayBuffer, SlideItem } from '../services/presentationService';
 import { formatMarkdownToHtml } from '../services/textService';
 import { UnsupportedFileView } from '../components/common/UnsupportedFileView';
+import { AnimatedIcon } from '../components/common/AnimatedIcon';
+import { PdfViewer } from '../components/readers/PdfViewer';
 
 interface ReaderScreenProps {
   document: DocumentItem;
@@ -51,7 +51,6 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
   const [showInDocSearch, setShowInDocSearch] = useState<boolean>(false);
 
   // Content parsing states
-  const [pdfPages, setPdfPages] = useState<RenderedPdfPage[]>([]);
   const [docxHtml, setDocxHtml] = useState<string>('');
   const [spreadsheetSheets, setSpreadsheetSheets] = useState<SheetData[]>([]);
   const [activeSheetIndex, setActiveSheetIndex] = useState<number>(0);
@@ -61,55 +60,94 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
 
   useEffect(() => {
     let isMounted = true;
-    async function parseDocumentContent() {
+    async function parseNonPdfDocumentContent() {
+      if (doc.type === 'pdf') {
+        return; // PDF handled by PdfViewer component
+      }
+
       setLoading(true);
 
       try {
-        if (doc.type === 'pdf') {
-          if (doc.dataUri) {
-            const result = await renderPdfPages(doc.dataUri);
-            if (isMounted) {
-              setPdfPages(result.pages);
-              setTotalPages(result.totalPages);
+        if (doc.type === 'word') {
+          if (doc.arrayBuffer) {
+            const result = await convertDocxToHtml(doc.arrayBuffer);
+            if (isMounted) setDocxHtml(result.html);
+          } else if (doc.content) {
+            if (doc.content.trim().startsWith('<')) {
+              setDocxHtml(doc.content);
+            } else {
+              setDocxHtml(parseDocxRawText(doc.content));
             }
-          } else {
-            setTotalPages(doc.pageCount || 220);
-          }
-        } else if (doc.type === 'word') {
-          if (doc.content) {
-            setDocxHtml(parseDocxRawText(doc.content));
           }
           setTotalPages(doc.pageCount || 12);
         } else if (doc.type === 'excel') {
-          if (doc.content) {
+          if (doc.arrayBuffer) {
+            const data = parseSpreadsheetBuffer(doc.arrayBuffer);
+            if (isMounted) {
+              setSpreadsheetSheets(data.sheets);
+              setTotalPages(data.sheets.length || 1);
+            }
+          } else if (doc.content) {
             const data = parseSpreadsheetBuffer(doc.content);
-            setSpreadsheetSheets(data.sheets);
-            setTotalPages(data.sheets.length || 1);
+            if (isMounted) {
+              setSpreadsheetSheets(data.sheets);
+              setTotalPages(data.sheets.length || 1);
+            }
           }
         } else if (doc.type === 'powerpoint') {
-          if (doc.content) {
+          if (doc.arrayBuffer) {
+            const parsedSlides = await parsePptxArrayBuffer(doc.arrayBuffer);
+            if (isMounted) {
+              setSlides(parsedSlides);
+              setTotalPages(parsedSlides.length || 1);
+            }
+          } else if (doc.dataUri) {
+            const base64Str = doc.dataUri.split(',')[1] || doc.dataUri;
+            const binaryStr = atob(base64Str);
+            const bytes = new Uint8Array(binaryStr.length);
+            for (let i = 0; i < binaryStr.length; i++) {
+              bytes[i] = binaryStr.charCodeAt(i);
+            }
+            const parsedSlides = await parsePptxArrayBuffer(bytes.buffer);
+            if (isMounted) {
+              setSlides(parsedSlides);
+              setTotalPages(parsedSlides.length || 1);
+            }
+          } else if (doc.content) {
             const parsedSlides = parsePresentationText(doc.content);
-            setSlides(parsedSlides);
-            setTotalPages(parsedSlides.length || 18);
+            if (isMounted) {
+              setSlides(parsedSlides);
+              setTotalPages(parsedSlides.length || 1);
+            }
           }
         } else if (doc.type === 'text' || doc.type === 'markdown') {
           if (doc.content) {
-            setFormattedTextHtml(formatMarkdownToHtml(doc.content));
+            if (doc.content.trim().startsWith('<')) {
+              setFormattedTextHtml(doc.content);
+            } else {
+              setFormattedTextHtml(formatMarkdownToHtml(doc.content));
+            }
           }
           setTotalPages(doc.pageCount || 4);
         }
       } catch (err) {
-        console.warn('Error rendering document:', err);
+        console.warn('Error parsing document:', err);
       } finally {
         if (isMounted) setLoading(false);
       }
     }
 
-    parseDocumentContent();
+    parseNonPdfDocumentContent();
     return () => {
       isMounted = false;
     };
   }, [doc]);
+
+  const handlePdfLoadSuccess = (numPages: number) => {
+    setTotalPages(numPages);
+    setLoading(false);
+    onUpdatePage(currentPage, numPages);
+  };
 
   const handleNextPage = () => {
     if (currentPage < totalPages) {
@@ -160,10 +198,10 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.98 }}
-      transition={{ duration: 0.2 }}
+      initial={{ opacity: 0, scale: 0.95, y: 15 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95, y: 15 }}
+      transition={{ type: 'spring', stiffness: 380, damping: 26 }}
       className="flex flex-col w-full relative select-none pb-36 min-w-0"
     >
       {/* Top Document Ribbon */}
@@ -192,7 +230,7 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
               isBookmarked ? '' : 'text-[#58413f] dark:text-[#c8bead]'
             }`}
           >
-            <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
+            <AnimatedIcon icon={Bookmark} className={`w-4 h-4 ${isBookmarked ? 'fill-current' : ''}`} />
           </motion.button>
 
           <motion.button
@@ -201,7 +239,7 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
             title="Search Text"
             className="w-8 h-8 rounded-lg bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center retro-border-sm retro-shadow-sm cursor-pointer"
           >
-            <Search className="w-4 h-4" />
+            <AnimatedIcon icon={Search} className="w-4 h-4" />
           </motion.button>
 
           <motion.button
@@ -210,7 +248,7 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
             title="Document Details"
             className="w-8 h-8 rounded-lg bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center retro-border-sm retro-shadow-sm cursor-pointer"
           >
-            <Info className="w-4 h-4" />
+            <AnimatedIcon icon={Info} className="w-4 h-4" />
           </motion.button>
         </div>
       </div>
@@ -268,8 +306,11 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
         )}
       </AnimatePresence>
 
-      {/* PHYSICAL DOCUMENT SHEET CONTAINER */}
-      <article
+      {/* PHYSICAL DOCUMENT SHEET CONTAINER WITH ENTRANCE ANIMATION */}
+      <motion.article
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.08, duration: 0.35, ease: 'easeOut' }}
         className={`relative w-full rounded-2xl retro-border retro-shadow-lg transition-all duration-200 overflow-hidden min-w-0 ${getThemeStyles()}`}
         style={{
           transformOrigin: 'top center',
@@ -296,163 +337,140 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
 
         {/* INNER CONTENT PAGE AREA */}
         <div className="p-4 sm:p-5 flex flex-col gap-4 min-h-[450px] min-w-0">
-          {loading ? (
+          {doc.type === 'pdf' ? (
+            /* Specialized Blob URL PdfViewer Component */
+            <AnimatePresence mode="wait">
+              <motion.div 
+                key={currentPage} 
+                initial={{ opacity: 0, x: 10 }} 
+                animate={{ opacity: 1, x: 0 }} 
+                exit={{ opacity: 0, x: -10 }} 
+                transition={{ duration: 0.2 }}
+                className="flex flex-col items-center justify-center min-w-0 w-full"
+              >
+                <PdfViewer
+                  document={doc}
+                  currentPage={currentPage}
+                  zoom={zoom}
+                  fitMode={fitMode}
+                  onLoadSuccess={handlePdfLoadSuccess}
+                />
+              </motion.div>
+            </AnimatePresence>
+          ) : loading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <Loader2 className="w-8 h-8 animate-spin text-[var(--primary-red)]" />
-              <p className="font-heading font-bold text-xs uppercase tracking-wider opacity-70">Rendering Document Page...</p>
-            </div>
-          ) : doc.type === 'pdf' ? (
-            /* PDF Page rendering */
-            <div className="flex flex-col gap-6 min-w-0">
-              {pdfPages.length > 0 ? (
-                pdfPages.slice(currentPage - 1, currentPage).map((page) => (
-                  <div key={page.pageNumber} className="flex flex-col gap-3 min-w-0">
-                    {page.canvasDataUrl ? (
-                      <img
-                        src={page.canvasDataUrl}
-                        alt={`Page ${page.pageNumber}`}
-                        className="w-full h-auto rounded-lg retro-border-sm"
-                      />
-                    ) : null}
-                    <div className="font-sans text-sm leading-relaxed whitespace-pre-wrap break-words">
-                      {page.textContent}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="flex flex-col gap-4 min-w-0">
-                  <div className="inline-block self-start px-2 py-0.5 rounded bg-black/5 font-heading font-bold text-[10px] uppercase tracking-widest">
-                    ARCHIVAL SHEET #{String(currentPage).padStart(3, '0')}
-                  </div>
-                  <h1 className="font-heading text-lg sm:text-xl font-bold tracking-tight">
-                    Hardware Abstraction Layer & IPC
-                  </h1>
-                  <p className="font-sans text-xs opacity-75">
-                    Kernel 5.15 LTS • Project Treble HIDL/AIDL Specification
-                  </p>
-                  <p className="font-sans text-sm leading-relaxed">
-                    The Android binder architecture serves as the cornerstone inter-process communication (IPC) mechanism across user-space sandboxes. By arbitrating process boundary transitions within the dedicated <code style={{ color: 'var(--primary-red)' }} className="px-1.5 py-0.5 bg-black/10 rounded font-bold text-xs">/dev/binder</code> Linux character driver, the kernel implements zero-copy transaction deserialization, guaranteeing synchronous RPC isolation and strict memory safety primitives.
-                  </p>
-
-                  {/* Technical Diagram Illustration */}
-                  <div className="w-full bg-black/5 rounded-xl p-3 sm:p-4 retro-border-sm flex flex-col gap-2 my-2 overflow-x-auto">
-                    <span className="font-heading font-bold text-xs uppercase tracking-wider">Fig 4.2: Shared Memory IPC Buffer Topology</span>
-                    <svg className="w-full min-w-[300px] h-auto" viewBox="0 0 340 90" fill="none" stroke="currentColor">
-                      <rect x="8" y="14" width="94" height="64" rx="6" stroke="#171717" strokeWidth="2.5" fill="#f9f4e1" />
-                      <text x="55" y="42" textAnchor="middle" fill="#171717" fontFamily="Space Grotesk" fontSize="11" fontWeight="700">App Process</text>
-                      <text x="55" y="58" textAnchor="middle" fill="#58413f" fontFamily="Inter" fontSize="9">BpBinder Client</text>
-                      <path d="M102 46 L136 46" stroke="var(--primary-red)" strokeWidth="2.5" />
-                      <polygon points="134,42 142,46 134,50" fill="var(--primary-red)" />
-                      <rect x="142" y="8" width="60" height="76" rx="8" stroke="#171717" strokeWidth="2.5" fill="var(--primary-red)" />
-                      <text x="172" y="42" textAnchor="middle" fill="#ffffff" fontFamily="Space Grotesk" fontSize="10" fontWeight="700">/dev/binder</text>
-                      <text x="172" y="58" textAnchor="middle" fill="#ffffff" fontFamily="Inter" fontSize="8">mmap Pool</text>
-                      <path d="M202 46 L236 46" stroke="var(--primary-red)" strokeWidth="2.5" />
-                      <polygon points="234,42 242,46 234,50" fill="var(--primary-red)" />
-                      <rect x="238" y="14" width="94" height="64" rx="6" stroke="#171717" strokeWidth="2.5" fill="#f9f4e1" />
-                      <text x="285" y="42" textAnchor="middle" fill="#171717" fontFamily="Space Grotesk" fontSize="11" fontWeight="700">System Server</text>
-                      <text x="285" y="58" textAnchor="middle" fill="#58413f" fontFamily="Inter" fontSize="9">BBinder Stub</text>
-                    </svg>
-                  </div>
-
-                  {/* Warning Callout Box */}
-                  <div
-                    style={{ borderColor: 'var(--primary-red)' }}
-                    className="w-full bg-black/5 p-3.5 sm:p-4 rounded-xl border flex items-start gap-3 my-2"
-                  >
-                    <Lock className="w-5 h-5 text-[var(--primary-red)] shrink-0 mt-0.5" />
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <span style={{ color: 'var(--primary-red)' }} className="font-heading font-bold text-xs uppercase tracking-wider">
-                        Critical Execution Constraint
-                      </span>
-                      <p className="font-sans text-xs leading-snug">
-                        All synchronous IPC transactions are strictly capped at <strong>1MB shared buffer ceiling</strong> per active process pool. Exceeding this boundary triggers immediate <code style={{ color: 'var(--primary-red)' }} className="font-bold">TransactionTooLargeException</code> faults.
-                      </p>
-                    </div>
-                  </div>
-
-                  <p className="font-sans text-sm leading-relaxed">
-                    With AIDL (Android Interface Definition Language) transitioning to backend-agnostic NDK toolchains in recent releases, runtime performance yields deterministic latency under 120 microseconds on modern multi-cluster big.LITTLE architectures.
-                  </p>
-                </div>
-              )}
+              <p className="font-heading font-bold text-xs uppercase tracking-wider opacity-70">
+                Rendering Document Page...
+              </p>
             </div>
           ) : doc.type === 'excel' ? (
             /* Spreadsheet Grid Renderer */
-            <div className="flex flex-col gap-4 min-w-0">
-              {spreadsheetSheets.length > 0 ? (
-                <>
-                  <div className="flex items-center gap-1 border-b border-black/10 pb-2 overflow-x-auto no-scrollbar">
-                    {spreadsheetSheets.map((sheet, index) => (
-                      <button
-                        key={sheet.name}
-                        onClick={() => setActiveSheetIndex(index)}
-                        style={{
-                          backgroundColor: activeSheetIndex === index ? 'var(--primary-red)' : undefined,
-                        }}
-                        className={`px-3 py-1 rounded-lg font-heading font-bold text-xs uppercase cursor-pointer whitespace-nowrap shrink-0 ${
-                          activeSheetIndex === index ? 'text-white' : 'bg-black/5 text-[#1d1c11]'
-                        }`}
-                      >
-                        {sheet.name}
-                      </button>
-                    ))}
-                  </div>
+            <AnimatePresence mode="wait">
+              <motion.div 
+                key={activeSheetIndex}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                className="flex flex-col gap-4 min-w-0"
+              >
+                {spreadsheetSheets.length > 0 ? (
+                  <>
+                    <div className="flex items-center gap-1 border-b border-black/10 pb-2 overflow-x-auto no-scrollbar">
+                      {spreadsheetSheets.map((sheet, index) => (
+                        <button
+                          key={sheet.name}
+                          onClick={() => setActiveSheetIndex(index)}
+                          style={{
+                            backgroundColor: activeSheetIndex === index ? 'var(--primary-red)' : undefined,
+                          }}
+                          className={`px-3 py-1 rounded-lg font-heading font-bold text-xs uppercase cursor-pointer whitespace-nowrap shrink-0 ${
+                            activeSheetIndex === index ? 'text-white' : 'bg-black/5 text-[#1d1c11]'
+                          }`}
+                        >
+                          {sheet.name}
+                        </button>
+                      ))}
+                    </div>
 
-                  <div className="overflow-x-auto rounded-xl border border-black/20">
-                    <table className="w-full border-collapse text-xs font-mono">
-                      <thead>
-                        <tr className="bg-black/10">
-                          {spreadsheetSheets[activeSheetIndex]?.headers.map((header, idx) => (
-                            <th key={idx} className="p-2 border border-black/20 text-left font-bold whitespace-nowrap">
-                              {header}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {spreadsheetSheets[activeSheetIndex]?.rows.map((row, rIdx) => (
-                          <tr key={rIdx} className="hover:bg-black/5">
-                            {row.map((cell, cIdx) => (
-                              <td key={cIdx} className="p-2 border border-black/10 whitespace-nowrap">
-                                {cell}
-                              </td>
+                    <div className="overflow-x-auto rounded-xl border border-black/20">
+                      <table className="w-full border-collapse text-xs font-mono">
+                        <thead>
+                          <tr className="bg-black/10">
+                            {spreadsheetSheets[activeSheetIndex]?.headers.map((header, idx) => (
+                              <th key={idx} className="p-2 border border-black/20 text-left font-bold whitespace-nowrap">
+                                {header}
+                              </th>
                             ))}
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              ) : null}
-            </div>
+                        </thead>
+                        <tbody>
+                          {spreadsheetSheets[activeSheetIndex]?.rows.map((row, rIdx) => (
+                            <tr key={rIdx} className="hover:bg-black/5">
+                              {row.map((cell, cIdx) => (
+                                <td key={cIdx} className="p-2 border border-black/10 whitespace-nowrap">
+                                  {cell}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  <div
+                    className="prose max-w-none text-sm font-sans leading-relaxed break-words min-w-0"
+                    dangerouslySetInnerHTML={{ __html: doc.content ? formatMarkdownToHtml(doc.content) : '<p>Spreadsheet data loaded.</p>' }}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
           ) : doc.type === 'powerpoint' ? (
             /* Presentation Slide Viewer */
-            <div className="flex flex-col gap-4 min-w-0">
-              {slides.length > 0 ? (
-                <div className="p-5 sm:p-6 bg-black/5 rounded-2xl retro-border-sm flex flex-col gap-3 min-w-0">
-                  <span style={{ color: 'var(--primary-red)' }} className="font-heading font-bold text-xs uppercase tracking-widest">
-                    SLIDE {currentPage} OF {slides.length}
-                  </span>
-                  <h2 className="font-heading text-xl sm:text-2xl font-bold">
-                    {slides[currentPage - 1]?.title || 'Slide Title'}
-                  </h2>
-                  <ul className="flex flex-col gap-2">
-                    {slides[currentPage - 1]?.bulletPoints.map((point, idx) => (
-                      <li key={idx} className="font-sans text-sm flex items-start gap-2">
-                        <span style={{ color: 'var(--primary-red)' }} className="font-bold">•</span>
-                        <span>{point}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </div>
+            <AnimatePresence mode="wait">
+              <motion.div 
+                key={currentPage}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2 }}
+                className="flex flex-col gap-4 min-w-0"
+              >
+                {slides.length > 0 ? (
+                  <div className="p-5 sm:p-6 bg-black/5 rounded-2xl retro-border-sm flex flex-col gap-3 min-w-0">
+                    <span style={{ color: 'var(--primary-red)' }} className="font-heading font-bold text-xs uppercase tracking-widest">
+                      SLIDE {currentPage} OF {slides.length}
+                    </span>
+                    <h2 className="font-heading text-xl sm:text-2xl font-bold">
+                      {slides[currentPage - 1]?.title || 'Slide Title'}
+                    </h2>
+                    <ul className="flex flex-col gap-2">
+                      {slides[currentPage - 1]?.bulletPoints.map((point, idx) => (
+                        <li key={idx} className="font-sans text-sm flex items-start gap-2">
+                          <span style={{ color: 'var(--primary-red)' }} className="font-bold">•</span>
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <div
+                    className="prose max-w-none text-sm font-sans leading-relaxed break-words min-w-0"
+                    dangerouslySetInnerHTML={{ __html: doc.content ? formatMarkdownToHtml(doc.content) : '<p>Slide presentation loaded.</p>' }}
+                  />
+                )}
+              </motion.div>
+            </AnimatePresence>
           ) : (
             /* Word HTML or Markdown / TXT rendering */
-            <div
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25 }}
               className="prose max-w-none text-sm font-sans leading-relaxed break-words min-w-0"
               dangerouslySetInnerHTML={{
-                __html: docxHtml || formattedTextHtml || (doc.content ? formatMarkdownToHtml(doc.content) : ''),
+                __html: docxHtml || formattedTextHtml || (doc.content ? formatMarkdownToHtml(doc.content) : '<p class="text-sm font-sans">Document content loaded successfully.</p>'),
               }}
             />
           )}
@@ -470,7 +488,7 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
             </div>
           </div>
         </div>
-      </article>
+      </motion.article>
 
       {/* Next Page Cue */}
       {currentPage < totalPages && (

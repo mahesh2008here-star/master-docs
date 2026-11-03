@@ -13,7 +13,8 @@ import {
   History, 
   Download, 
   Upload, 
-  ShieldCheck 
+  ShieldCheck,
+  FolderSync
 } from 'lucide-react';
 import { AppSettings } from '../types/document';
 
@@ -24,6 +25,7 @@ interface SettingsScreenProps {
   onClearHistory: () => void;
   onExportBackup: () => void;
   onImportBackup: () => void;
+  onSeedDemoDocs?: () => void;
 }
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
@@ -33,6 +35,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   onClearHistory,
   onExportBackup,
   onImportBackup,
+  onSeedDemoDocs,
 }) => {
   const colorInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -300,6 +303,22 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <span className="truncate">Restore Data</span>
           </motion.button>
         </div>
+
+        {onSeedDemoDocs && (
+          <div className="pt-2 border-t border-black/10 dark:border-white/10 flex flex-col gap-2">
+            <span className="font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de]">
+              Testing & Evaluation
+            </span>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={onSeedDemoDocs}
+              className="h-11 rounded-xl bg-[#f3eedc] dark:bg-[#333128] text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-xs uppercase tracking-wider retro-border-sm retro-shadow-sm flex items-center justify-center gap-2 cursor-pointer w-full"
+            >
+              <FolderSync className="w-4 h-4 text-[var(--primary-red)]" />
+              <span>LOAD SAMPLE DEMO DOCUMENTS</span>
+            </motion.button>
+          </div>
+        )}
       </div>
 
       {/* 4. PRIVACY & SECURITY */}

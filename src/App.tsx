@@ -17,8 +17,11 @@ import {
   clearRecentSessions,
   getAppSettings,
   saveAppSettings,
+  seedDemoDocuments,
 } from './storage/db';
 import { getDocumentType } from './utils/fileHelpers';
+import { convertDocxToHtml } from './services/docxService';
+import { requestAndroidStoragePermissions } from './services/permissionService';
 import { TopHeader } from './components/navigation/TopHeader';
 import { LiquidGlassDock } from './components/navigation/LiquidGlassDock';
 import { HomeScreen } from './screens/HomeScreen';
@@ -35,7 +38,8 @@ export default function App() {
   const [recentSessions, setRecentSessions] = useState<ReadingSession[]>([]);
   const [settings, setSettings] = useState<AppSettings>({
     themeMode: 'light',
-    accentColor: 'red',
+    accentColor: '#a92f2e',
+    customAccentColor: '#a92f2e',
     defaultZoom: 100,
     pageSpacing: 'normal',
     continuousScroll: true,
@@ -62,6 +66,11 @@ export default function App() {
   });
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Reset scroll position on active tab navigation
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [activeTab]);
 
   // Initialize DB and load documents & settings
   useEffect(() => {
@@ -142,7 +151,6 @@ export default function App() {
   const handleOpenDocument = (doc: DocumentItem) => {
     setSelectedDoc(doc);
     setActiveTab('reader');
-    // Update initial session progress
     updateReadingProgress(doc.id, doc.lastReadPage || 1, doc.pageCount || 10).then(() => {
       getRecentSessions().then(setRecentSessions);
     });
@@ -161,66 +169,122 @@ export default function App() {
     await toggleFavorite(id);
   };
 
-  // Import local document handler using File API
-  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Import local document handler using File API & DataURL/ArrayBuffer
+  const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    const file = files[0];
-    const extension = file.name.split('.').pop() || 'txt';
-    const docType = getDocumentType(extension);
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const extension = file.name.split('.').pop() || 'txt';
+      const docType = getDocumentType(extension);
 
-    const reader = new FileReader();
+      // Read arrayBuffer for binary formats
+      const arrayBuffer = await file.arrayBuffer();
 
-    if (docType === 'text' || docType === 'markdown') {
-      reader.onload = async (evt) => {
-        const text = evt.target?.result as string;
-        const newDoc: DocumentItem = {
-          id: 'doc-' + Date.now(),
-          name: file.name,
-          extension,
-          type: docType,
-          size: file.size,
-          modifiedAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          isFavorite: false,
-          pageCount: Math.ceil((text || '').length / 1000) || 1,
-          lastReadPage: 1,
-          readProgress: 0,
-          content: text,
+      if (docType === 'pdf') {
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+          const dataUri = evt.target?.result as string;
+          const newDoc: DocumentItem = {
+            id: 'doc-' + Date.now() + '-' + i,
+            name: file.name,
+            extension,
+            type: docType,
+            size: file.size,
+            modifiedAt: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            isFavorite: false,
+            pageCount: 1,
+            lastReadPage: 1,
+            readProgress: 0,
+            dataUri,
+            arrayBuffer,
+          };
+          await saveDocument(newDoc);
+          setDocuments((prev) => [newDoc, ...prev.filter((d) => d.id !== newDoc.id)]);
+          handleOpenDocument(newDoc);
         };
-        await saveDocument(newDoc);
-        setDocuments((prev) => [newDoc, ...prev]);
-        handleOpenDocument(newDoc);
-      };
-      reader.readAsText(file);
-    } else {
-      reader.onload = async (evt) => {
-        const dataUri = evt.target?.result as string;
-        const newDoc: DocumentItem = {
-          id: 'doc-' + Date.now(),
-          name: file.name,
-          extension,
-          type: docType,
-          size: file.size,
-          modifiedAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          isFavorite: false,
-          pageCount: 10,
-          lastReadPage: 1,
-          readProgress: 0,
-          dataUri,
-          content: `Imported document content for ${file.name}`,
+        reader.readAsDataURL(file);
+      } else if (docType === 'word') {
+        try {
+          const convertResult = await convertDocxToHtml(arrayBuffer);
+          const newDoc: DocumentItem = {
+            id: 'doc-' + Date.now() + '-' + i,
+            name: file.name,
+            extension,
+            type: docType,
+            size: file.size,
+            modifiedAt: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            isFavorite: false,
+            pageCount: 1,
+            lastReadPage: 1,
+            readProgress: 0,
+            content: convertResult.html,
+            arrayBuffer,
+          };
+          await saveDocument(newDoc);
+          setDocuments((prev) => [newDoc, ...prev.filter((d) => d.id !== newDoc.id)]);
+          handleOpenDocument(newDoc);
+        } catch (err) {
+          console.error('Word document conversion error:', err);
+        }
+      } else if (docType === 'excel' || docType === 'powerpoint') {
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+          const dataUri = evt.target?.result as string;
+          const newDoc: DocumentItem = {
+            id: 'doc-' + Date.now() + '-' + i,
+            name: file.name,
+            extension,
+            type: docType,
+            size: file.size,
+            modifiedAt: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            isFavorite: false,
+            pageCount: 1,
+            lastReadPage: 1,
+            readProgress: 0,
+            dataUri,
+            arrayBuffer,
+          };
+          await saveDocument(newDoc);
+          setDocuments((prev) => [newDoc, ...prev.filter((d) => d.id !== newDoc.id)]);
+          handleOpenDocument(newDoc);
         };
-        await saveDocument(newDoc);
-        setDocuments((prev) => [newDoc, ...prev]);
-        handleOpenDocument(newDoc);
-      };
-      reader.readAsDataURL(file);
+        reader.readAsDataURL(file);
+      } else {
+        // Plain text / markdown / fallback
+        const reader = new FileReader();
+        reader.onload = async (evt) => {
+          const text = evt.target?.result as string;
+          const newDoc: DocumentItem = {
+            id: 'doc-' + Date.now() + '-' + i,
+            name: file.name,
+            extension,
+            type: docType,
+            size: file.size,
+            modifiedAt: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            isFavorite: false,
+            pageCount: Math.ceil((text || '').length / 1000) || 1,
+            lastReadPage: 1,
+            readProgress: 0,
+            content: text,
+            arrayBuffer,
+          };
+          await saveDocument(newDoc);
+          setDocuments((prev) => [newDoc, ...prev.filter((d) => d.id !== newDoc.id)]);
+          handleOpenDocument(newDoc);
+        };
+        reader.readAsText(file);
+      }
     }
   };
 
-  const triggerFilePicker = () => {
+  const triggerFilePicker = async () => {
+    await requestAndroidStoragePermissions();
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
       fileInputRef.current.click();
@@ -312,18 +376,25 @@ export default function App() {
     input.click();
   };
 
+  const handleSeedDemoDocs = async () => {
+    const loaded = await seedDemoDocuments();
+    setDocuments(loaded);
+    alert('Sample demo documents loaded into local vault!');
+  };
+
   return (
-    <div className="min-h-screen bg-[#fff9e7] dark:bg-[#181711] text-[#1d1c11] dark:text-[#f6f1de] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#fff9e7] dark:bg-[#181711] text-[#1d1c11] dark:text-[#f6f1de] flex flex-col font-sans overflow-x-hidden">
       {/* Hidden system file picker input */}
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleFileImport}
         accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.pptx,.ppt,.txt,.md"
+        multiple
         className="hidden"
       />
 
-      {/* Top Header */}
+      {/* Sticky Top Header */}
       <TopHeader
         activeTab={activeTab}
         subtitle={selectedDoc?.name}
@@ -340,7 +411,7 @@ export default function App() {
       />
 
       {/* Main View Container */}
-      <main className="flex-1 w-full max-w-2xl mx-auto px-4 pt-20">
+      <main className="flex-1 w-full max-w-2xl mx-auto px-3 sm:px-4 pt-3 sm:pt-4 min-w-0">
         {activeTab === 'home' && (
           <HomeScreen
             documents={documents}
@@ -394,6 +465,7 @@ export default function App() {
             onClearHistory={handleClearHistory}
             onExportBackup={handleExportBackup}
             onImportBackup={handleImportBackup}
+            onSeedDemoDocs={handleSeedDemoDocs}
           />
         )}
 

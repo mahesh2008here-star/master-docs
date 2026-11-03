@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, BookOpen, Search, User } from 'lucide-react';
 import { NavigationTab } from '../../types/document';
+import { AnimatedIcon } from '../common/AnimatedIcon';
 
 interface TopHeaderProps {
   activeTab: NavigationTab;
@@ -21,7 +22,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   const isSubPage = activeTab === 'reader' || activeTab === 'search';
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 pt-safe bg-[#fff9e7]/95 dark:bg-[#181711]/95 backdrop-blur-xl border-b border-black/10 dark:border-white/10 shadow-xs">
+    <header className="sticky top-0 left-0 right-0 z-40 w-full pt-safe bg-[#fff9e7]/95 dark:bg-[#181711]/95 backdrop-blur-xl border-b border-black/10 dark:border-white/10 shadow-xs">
       <div className="h-16 px-3 sm:px-4 flex items-center justify-between gap-2 max-w-2xl mx-auto">
         {/* Left Section: Back button & Title */}
         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -32,13 +33,13 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               aria-label="Navigate back"
               className="w-9 h-9 rounded-xl bg-[#f9f4e1] dark:bg-[#2b2921] flex items-center justify-center text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm retro-shadow-sm cursor-pointer shrink-0"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <AnimatedIcon icon={ArrowLeft} className="w-5 h-5" />
             </motion.button>
           )}
 
           {/* Docs Badge */}
           <div className="h-8 px-2 rounded-lg bg-[#f3eedc] dark:bg-[#333128] retro-border-sm border-[#171717] flex items-center justify-center gap-1.5 shrink-0 retro-shadow-sm">
-            <BookOpen className="w-4 h-4 text-[var(--primary-red)] shrink-0" />
+            <AnimatedIcon icon={BookOpen} className="w-4 h-4 text-[var(--primary-red)]" float />
             <span className="font-heading text-[10px] font-bold uppercase tracking-wider text-[#1d1c11] dark:text-[#f6f1de]">
               DOCS
             </span>
@@ -64,7 +65,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               aria-label="Search documents"
               className="w-9 h-9 rounded-xl bg-[#f9f4e1] dark:bg-[#2b2921] flex items-center justify-center text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm retro-shadow-sm cursor-pointer"
             >
-              <Search className="w-4 h-4" />
+              <AnimatedIcon icon={Search} className="w-4 h-4" />
             </motion.button>
           )}
 
@@ -75,7 +76,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             className="w-8 h-8 rounded-full flex items-center justify-center text-white shadow-xs cursor-pointer transition-colors shrink-0"
             title="Account & Settings"
           >
-            <User className="w-4 h-4" />
+            <AnimatedIcon icon={User} className="w-4 h-4 text-white" />
           </motion.button>
         </div>
       </div>

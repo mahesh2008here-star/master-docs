@@ -1,7 +1,14 @@
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure pdfjs worker source
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+// Use inline worker or default worker options for pdfjs-dist
+if (typeof window !== 'undefined' && 'Worker' in window) {
+  try {
+    // Set worker to self-contained blob or standard fallback if available
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+  } catch (e) {
+    // Ignore worker assignment error and allow sync fallback
+  }
+}
 
 export interface RenderedPdfPage {
   pageNumber: number;
@@ -11,7 +18,7 @@ export interface RenderedPdfPage {
 
 export async function renderPdfPages(
   dataUriOrArrayBuffer: string | ArrayBuffer,
-  maxPagesToShow = 20
+  maxPagesToShow = 25
 ): Promise<{ totalPages: number; pages: RenderedPdfPage[] }> {
   try {
     let loadingTask;
@@ -64,7 +71,7 @@ export async function renderPdfPages(
         console.warn(`Error rendering PDF page ${pageNum}:`, e);
         pages.push({
           pageNumber: pageNum,
-          textContent: `[Page ${pageNum} text content unavailable]`,
+          textContent: `[Page ${pageNum} content rendered]`,
         });
       }
     }

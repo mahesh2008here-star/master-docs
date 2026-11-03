@@ -19,16 +19,16 @@ export async function convertDocxToHtml(arrayBuffer: ArrayBuffer): Promise<DocxR
 }
 
 export function parseDocxRawText(text: string): string {
-  // Convert plain structured text to clean styled HTML paragraphs if raw DOCX buffer is not provided
+  if (!text) return '';
   return text
     .split('\n\n')
     .map((paragraph) => {
       const trimmed = paragraph.trim();
       if (!trimmed) return '';
       if (/^\d+\.\s/.test(trimmed) || trimmed.startsWith('#')) {
-        return `<h2 class="font-headline-md text-headline-md text-on-surface mt-4 mb-2">${trimmed.replace(/^#+\s*/, '')}</h2>`;
+        return `<h2 class="font-heading font-bold text-lg sm:text-xl text-[#1d1c11] dark:text-[#f6f1de] mt-4 mb-2 border-b border-black/10 dark:border-white/10 pb-1">${trimmed.replace(/^#+\s*/, '')}</h2>`;
       }
-      return `<p class="font-body-md text-body-md text-on-surface mb-3 leading-relaxed">${trimmed}</p>`;
+      return `<p class="font-sans text-sm text-[#1d1c11] dark:text-[#f6f1de] mb-3 leading-relaxed">${trimmed}</p>`;
     })
     .join('');
 }

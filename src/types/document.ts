@@ -17,6 +17,7 @@ export interface DocumentItem {
   readProgress?: number; // 0 - 100 percentage
   dataUri?: string; // Base64 data or Blob URL
   content?: string; // Text content if plain text / extracted text
+  arrayBuffer?: ArrayBuffer;
   thumbnail?: string;
   path?: string;
 }

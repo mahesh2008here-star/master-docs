@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Home, FolderOpen, Bookmark, Clock, Settings } from 'lucide-react';
 import { NavigationTab } from '../../types/document';
+import { AnimatedIcon } from '../common/AnimatedIcon';
 
 interface LiquidGlassDockProps {
   activeTab: NavigationTab;
@@ -23,11 +24,10 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({ activeTab, onS
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 pb-safe px-3 sm:px-4 pointer-events-none">
-      <div className="max-w-md mx-auto mb-2 pointer-events-auto rounded-full bg-white/90 dark:bg-[#212019]/90 backdrop-blur-xl border border-black/10 dark:border-white/10 shadow-[0_4px_24px_rgba(0,0,0,0.15)] px-2 py-1 transition-all">
+      <div className="max-w-md mx-auto mb-2 pointer-events-auto rounded-full bg-white/90 dark:bg-[#212019]/90 backdrop-blur-xl border border-black/10 dark:border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.18)] px-2 py-1 transition-all">
         <div className="flex items-center justify-around h-14 relative">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
-            const IconComponent = tab.icon;
 
             return (
               <button
@@ -42,29 +42,30 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({ activeTab, onS
                 {isActive && (
                   <motion.div
                     layoutId="dock-active-pill"
-                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                    className="absolute inset-0 rounded-full bg-[var(--primary-red)]/10 dark:bg-[var(--primary-red)]/20 -z-10"
+                    transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+                    className="absolute inset-0 rounded-full bg-[var(--primary-red)]/12 dark:bg-[var(--primary-red)]/25 retro-border-sm -z-10"
                   />
                 )}
 
-                <motion.div
-                  whileTap={{ scale: 0.85, rotate: -6 }}
-                  animate={{ scale: isActive ? 1.1 : 1 }}
-                  transition={{ type: 'spring', stiffness: 350, damping: 25 }}
-                  className={`flex items-center justify-center ${
+                <AnimatedIcon
+                  icon={tab.icon}
+                  className="w-5 h-5"
+                  isActive={isActive}
+                  animateOnHover
+                />
+
+                <motion.span
+                  animate={{
+                    scale: isActive ? 1.05 : 1,
+                    fontWeight: isActive ? 700 : 500,
+                  }}
+                  transition={{ duration: 0.2 }}
+                  className={`font-sans text-[10px] sm:text-[11px] leading-none mt-1 ${
                     isActive ? 'text-[var(--primary-red)]' : 'text-[#58413f] dark:text-[#c8bead]'
                   }`}
                 >
-                  <IconComponent className="w-5 h-5" />
-                </motion.div>
-
-                <span
-                  className={`font-sans text-[10px] sm:text-[11px] leading-none mt-1 ${
-                    isActive ? 'font-bold text-[var(--primary-red)]' : 'text-[#58413f] dark:text-[#c8bead]'
-                  }`}
-                >
                   {tab.label}
-                </span>
+                </motion.span>
               </button>
             );
           })}
