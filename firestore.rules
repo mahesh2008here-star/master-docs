@@ -1,0 +1,180 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 3 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'maheshm81622@gmail.com' ||
+        request.auth.token.email == 'mahesh.2008here@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidContributor(data) {
+      return data.keys().hasAll([
+          'id',
+          'name',
+          'amount',
+          'thankYouNote',
+          'utrMasked',
+          'utrHash',
+          'status',
+          'approvedByUid',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id',
+          'name',
+          'amount',
+          'note',
+          'thankYouNote',
+          'utrMasked',
+          'utrHash',
+          'status',
+          'approvedByUid',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 40 &&
+        (data.amount is int || data.amount is float) && data.amount >= 50 && data.amount <= 1000000 &&
+        (!('note' in data) || (data.note is string && data.note.size() <= 120)) &&
+        data.thankYouNote is string && data.thankYouNote.size() >= 1 && data.thankYouNote.size() <= 200 &&
+        data.utrMasked is string && data.utrMasked.size() >= 4 && data.utrMasked.size() <= 24 &&
+        data.utrHash is string && data.utrHash.size() >= 8 && data.utrHash.size() <= 128 &&
+        data.status == 'approved' &&
+        data.approvedByUid is string && data.approvedByUid.size() >= 1 && data.approvedByUid.size() <= 128 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidContributionRequest(data) {
+      return data.keys().hasAll([
+          'id',
+          'ownerId',
+          'name',
+          'amount',
+          'utr',
+          'utrMasked',
+          'utrHash',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id',
+          'ownerId',
+          'name',
+          'amount',
+          'utr',
+          'utrMasked',
+          'utrHash',
+          'note',
+          'thankYouNote',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 40 &&
+        (data.amount is int || data.amount is float) && data.amount >= 50 && data.amount <= 1000000 &&
+        data.utr is string && data.utr.size() >= 12 && data.utr.size() <= 24 && data.utr.matches('^[A-Z0-9]+$') &&
+        data.utrMasked is string && data.utrMasked.size() >= 4 && data.utrMasked.size() <= 24 &&
+        data.utrHash is string && data.utrHash.size() >= 8 && data.utrHash.size() <= 128 &&
+        (!('note' in data) || (data.note is string && data.note.size() <= 120)) &&
+        (!('thankYouNote' in data) || (data.thankYouNote is string && data.thankYouNote.size() <= 200)) &&
+        (data.status == 'pending' || data.status == 'approved' || data.status == 'rejected') &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Public approved contributors list (zero PII)
+    match /contributors/{contributorId} {
+      allow get: if isValidId(contributorId) && (resource == null || resource.data.status == 'approved');
+      allow list: if resource.data.status == 'approved';
+
+      allow create: if isAdmin() &&
+        isValidId(contributorId) &&
+        isValidContributor(incoming()) &&
+        incoming().id == contributorId &&
+        incoming().approvedByUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isAdmin() &&
+        isValidId(contributorId) &&
+        isValidContributor(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().approvedByUid == existing().approvedByUid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['thankYouNote', 'updatedAt']);
+
+      allow delete: if isAdmin() && isValidId(contributorId);
+    }
+
+    // Pending contribution verification claims
+    match /contribution_requests/{requestId} {
+      allow get: if isValidId(requestId) && (
+        isAdmin() || (isVerifiedUser() && resource != null && existing().ownerId == request.auth.uid)
+      );
+      allow list: if isAdmin() || (isVerifiedUser() && resource.data.ownerId == request.auth.uid);
+
+      allow create: if isVerifiedUser() &&
+        isValidId(requestId) &&
+        isValidContributionRequest(incoming()) &&
+        incoming().id == requestId &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().status == 'pending' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isAdmin() &&
+        isValidId(requestId) &&
+        isValidContributionRequest(incoming()) &&
+        existing().status == 'pending' &&
+        (incoming().status == 'approved' || incoming().status == 'rejected') &&
+        incoming().id == existing().id &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'thankYouNote', 'updatedAt']);
+
+      allow delete: if isAdmin() && isValidId(requestId);
+    }
+
+    // Explicit admin allowlist collection
+    match /admins/{adminUid} {
+      allow get: if isValidId(adminUid) && (isAdmin() || (isVerifiedUser() && adminUid == request.auth.uid));
+      allow list: if false;
+      allow create, update, delete: if false;
+    }
+  }
+}

@@ -38,20 +38,23 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
       transition={{ duration: 0.2 }}
       className="flex flex-col w-full space-y-4 pb-28 min-w-0"
     >
-      {/* Search Input Box */}
       <div className="relative w-full">
-        <div className="flex items-center gap-2 h-12 px-3 bg-white dark:bg-[#212019] rounded-xl retro-border retro-shadow">
+        <div className="flex items-center gap-2 h-12 px-4 bg-white dark:bg-[#212019] rounded-2xl retro-border retro-shadow">
           <Search className="w-5 h-5 text-[var(--primary-red)] shrink-0" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type filename, extension, or document text..."
+            placeholder="Search by filename, extension, or document text..."
             autoFocus
             className="w-full bg-transparent border-none text-sm font-sans text-[#1d1c11] dark:text-[#f6f1de] focus:outline-none placeholder:text-[#58413f]/60 min-w-0"
           />
           {query && (
-            <button onClick={() => setQuery('')} className="text-[#58413f] hover:text-[#1d1c11] cursor-pointer shrink-0">
+            <button
+              onClick={() => setQuery('')}
+              aria-label="Clear search"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-[#58413f] hover:text-[#1d1c11] dark:hover:text-[#f6f1de] cursor-pointer shrink-0"
+            >
               <X className="w-4 h-4" />
             </button>
           )}
@@ -60,28 +63,31 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
 
       <div className="flex items-center justify-between px-1 min-w-0">
         <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#ede8d6] dark:bg-[#3d3a30] retro-border-sm font-heading font-bold text-[11px] text-[#1d1c11] dark:text-[#f6f1de] uppercase tracking-wider retro-shadow-sm">
-          SEARCH RESULTS ({searchResults.length})
+          SEARCH RESULTS
+        </span>
+        <span className="font-sans text-xs text-[#58413f] dark:text-[#c8bead] tabular-nums">
+          {searchResults.length} found
         </span>
       </div>
 
       {!query.trim() ? (
         <div className="flex flex-col items-center justify-center p-8 text-center bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl retro-border retro-shadow">
-          <FileSearch className="w-12 h-12 text-[#58413f] dark:text-[#c8bead] mb-2" />
+          <FileSearch className="w-10 h-10 text-[#58413f] dark:text-[#c8bead] mb-2" />
           <h3 className="font-heading font-bold text-base text-[#1d1c11] dark:text-[#f6f1de] mb-1">
-            Global Vault Search
+            Search Your Library
           </h3>
-          <p className="font-sans text-xs text-[#58413f] dark:text-[#c8bead]">
-            Search across all imported offline PDFs, Word docs, spreadsheets, slides, and plain text notes.
+          <p className="font-sans text-xs text-[#58413f] dark:text-[#c8bead] max-w-xs">
+            Search across all imported offline PDFs, Word docs, spreadsheets, slides, and notes.
           </p>
         </div>
       ) : searchResults.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-8 text-center bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl retro-border retro-shadow">
-          <SearchX className="w-12 h-12 text-[#58413f] dark:text-[#c8bead] mb-2" />
+          <SearchX className="w-10 h-10 text-[#58413f] dark:text-[#c8bead] mb-2" />
           <h3 className="font-heading font-bold text-base text-[#1d1c11] dark:text-[#f6f1de] mb-1">
             No Matching Documents
           </h3>
-          <p className="font-sans text-xs text-[#58413f] dark:text-[#c8bead]">
-            No document matches "{query}". Check spelling or try a broader keyword.
+          <p className="font-sans text-xs text-[#58413f] dark:text-[#c8bead] max-w-xs">
+            No document matches &ldquo;{query}&rdquo;. Try another keyword or file format.
           </p>
         </div>
       ) : (
@@ -97,9 +103,9 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <div
-                    className={`w-9 h-9 rounded-xl ${badge.bgColor} retro-border-sm flex items-center justify-center text-white shrink-0 retro-shadow-sm`}
+                    className={`w-10 h-10 rounded-xl ${badge.bgColor} retro-border-sm flex items-center justify-center text-white shrink-0 retro-shadow-sm`}
                   >
-                    <DocumentIcon typeKey={badge.typeKey} className="w-4 h-4" />
+                    <DocumentIcon typeKey={badge.typeKey} className="w-5 h-5" />
                   </div>
 
                   <div className="min-w-0 flex-1">
@@ -107,10 +113,10 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
                       {doc.name}
                     </span>
                     <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-                      <span className="px-1.5 py-0.2 rounded bg-[#e7e2d1] dark:bg-[#474439] retro-border-sm font-sans text-[9px] sm:text-[10px] text-[#58413f] dark:text-[#c8bead] font-bold uppercase shrink-0">
+                      <span className="px-1.5 py-0.2 rounded bg-[#e7e2d1] dark:bg-[#474439] retro-border-sm font-sans text-[10px] text-[#58413f] dark:text-[#c8bead] font-bold uppercase shrink-0">
                         {badge.label}
                       </span>
-                      <span className="font-sans text-[10px] sm:text-[11px] text-[#58413f] dark:text-[#c8bead] truncate">
+                      <span className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] truncate tabular-nums">
                         {formatFileSize(doc.size)} • {formatDateLabel(doc.modifiedAt)}
                       </span>
                     </div>

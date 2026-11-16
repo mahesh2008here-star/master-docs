@@ -23,48 +23,53 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({ activeTab, onS
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 pb-safe px-3 sm:px-4 pointer-events-none">
-      <div className="max-w-md mx-auto mb-2 pointer-events-auto rounded-full bg-white/90 dark:bg-[#212019]/90 backdrop-blur-xl border border-black/10 dark:border-white/15 shadow-[0_8px_32px_rgba(0,0,0,0.18)] px-2 py-1 transition-all">
-        <div className="flex items-center justify-around h-14 relative">
+    <nav
+      aria-label="Main navigation"
+      className="fixed bottom-0 left-0 right-0 z-50 pb-safe px-3 pointer-events-none"
+    >
+      <div className="max-w-md mx-auto mb-1.5 pointer-events-auto rounded-full bg-[#f3eedc]/92 dark:bg-[#2b2921]/92 backdrop-blur-xl retro-border retro-shadow-lg px-2 py-1.5">
+        <div className="grid grid-cols-5 items-center h-13 relative gap-1">
           {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
+            const isActive =
+              activeTab === tab.id || (tab.id === 'settings' && activeTab === 'support');
 
             return (
               <button
                 key={tab.id}
+                type="button"
                 onClick={() => onSelectTab(tab.id)}
-                className="relative flex flex-col items-center justify-center min-w-[50px] sm:min-w-[60px] h-12 rounded-full cursor-pointer z-10 transition-colors"
+                className="relative flex flex-col items-center justify-center h-12 rounded-full cursor-pointer z-10 transition-colors px-1"
                 style={{
-                  color: isActive ? 'var(--primary-red)' : undefined,
+                  color: isActive ? '#ffffff' : undefined,
                 }}
               >
                 {isActive && (
                   <motion.div
                     layoutId="dock-active-pill"
-                    transition={{ type: 'spring', stiffness: 420, damping: 28 }}
-                    className="absolute inset-0 rounded-full bg-[var(--primary-red)]/12 dark:bg-[var(--primary-red)]/25 retro-border-sm -z-10"
+                    transition={{ type: 'spring', stiffness: 460, damping: 32 }}
+                    style={{ backgroundColor: 'var(--primary-red)' }}
+                    className="absolute inset-0 rounded-full retro-border-sm retro-shadow-sm -z-10"
                   />
                 )}
 
                 <AnimatedIcon
                   icon={tab.icon}
-                  className="w-5 h-5"
+                  className={`w-[18px] h-[18px] ${
+                    isActive ? 'text-white' : 'text-[#1d1c11] dark:text-[#f6f1de]'
+                  }`}
                   isActive={isActive}
                   animateOnHover
                 />
 
-                <motion.span
-                  animate={{
-                    scale: isActive ? 1.05 : 1,
-                    fontWeight: isActive ? 700 : 500,
-                  }}
-                  transition={{ duration: 0.2 }}
-                  className={`font-sans text-[10px] sm:text-[11px] leading-none mt-1 whitespace-nowrap ${
-                    isActive ? 'text-[var(--primary-red)]' : 'text-[#58413f] dark:text-[#c8bead]'
+                <span
+                  className={`font-heading text-[10px] leading-none mt-1 whitespace-nowrap ${
+                    isActive
+                      ? 'font-bold text-white'
+                      : 'font-semibold text-[#58413f] dark:text-[#c8bead]'
                   }`}
                 >
                   {tab.label}
-                </motion.span>
+                </span>
               </button>
             );
           })}

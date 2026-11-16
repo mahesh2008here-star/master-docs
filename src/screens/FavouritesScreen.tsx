@@ -30,27 +30,27 @@ export const FavouritesScreen: React.FC<FavouritesScreenProps> = ({
     >
       <div className="flex items-center justify-between px-1 min-w-0">
         <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#ede8d6] dark:bg-[#3d3a30] retro-border-sm font-heading font-bold text-[11px] text-[#1d1c11] dark:text-[#f6f1de] uppercase tracking-wider retro-shadow-sm">
-          SAVED VAULT ITEMS
+          SAVED DOCUMENTS
         </span>
-        <span className="font-sans text-xs text-[#58413f] dark:text-[#c8bead]">
-          {favoriteDocs.length} starred documents
+        <span className="font-sans text-xs text-[#58413f] dark:text-[#c8bead] tabular-nums">
+          {favoriteDocs.length} starred
         </span>
       </div>
 
       {favoriteDocs.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-8 text-center bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl retro-border retro-shadow">
-          <Bookmark className="w-12 h-12 text-[#D88B32] mb-2" />
+          <Bookmark className="w-10 h-10 text-[#D88B32] mb-2" />
           <h3 className="font-heading font-bold text-base text-[#1d1c11] dark:text-[#f6f1de] mb-1">
-            No Favourites Saved Yet
+            No Saved Documents Yet
           </h3>
-          <p className="font-sans text-xs text-[#58413f] dark:text-[#c8bead] mb-4">
-            Tap the star icon on any document in your library to add it to your quick-access favourites vault.
+          <p className="font-sans text-xs text-[#58413f] dark:text-[#c8bead] mb-4 max-w-xs">
+            Tap the star icon on any document in your library to pin it here for instant access.
           </p>
           <motion.button
-            whileTap={{ scale: 0.92 }}
+            whileTap={{ scale: 0.95 }}
             onClick={onImportFile}
             style={{ backgroundColor: 'var(--primary-red)' }}
-            className="h-10 px-4 rounded-xl text-white font-heading font-bold text-xs uppercase tracking-wider retro-border retro-shadow cursor-pointer transition-colors inline-flex items-center gap-1.5"
+            className="min-h-[44px] px-4 rounded-xl text-white font-heading font-bold text-xs uppercase tracking-wider retro-border retro-shadow cursor-pointer inline-flex items-center gap-1.5"
           >
             <Plus className="w-4 h-4" />
             <span>ADD DOCUMENTS</span>
@@ -79,10 +79,10 @@ export const FavouritesScreen: React.FC<FavouritesScreenProps> = ({
                       {doc.name}
                     </span>
                     <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-                      <span className="px-1.5 py-0.2 rounded bg-[#e7e2d1] dark:bg-[#474439] retro-border-sm font-sans text-[9px] sm:text-[10px] text-[#58413f] dark:text-[#c8bead] font-bold uppercase shrink-0">
+                      <span className="px-1.5 py-0.2 rounded bg-[#e7e2d1] dark:bg-[#474439] retro-border-sm font-sans text-[10px] text-[#58413f] dark:text-[#c8bead] font-bold uppercase shrink-0">
                         {badge.label}
                       </span>
-                      <span className="font-sans text-[10px] sm:text-[11px] text-[#58413f] dark:text-[#c8bead] truncate">
+                      <span className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] truncate tabular-nums">
                         {formatFileSize(doc.size)} • {formatDateLabel(doc.modifiedAt)}
                       </span>
                     </div>
@@ -90,10 +90,10 @@ export const FavouritesScreen: React.FC<FavouritesScreenProps> = ({
                 </div>
 
                 <motion.button
-                  whileTap={{ scale: 0.85 }}
+                  whileTap={{ scale: 0.88 }}
                   onClick={(e) => onToggleFavorite(doc.id, e)}
                   aria-label="Remove favorite"
-                  className="w-9 h-9 rounded-xl bg-white dark:bg-[#212019] retro-border-sm flex items-center justify-center text-[#D88B32] retro-shadow-sm cursor-pointer shrink-0"
+                  className="w-10 h-10 rounded-xl bg-white dark:bg-[#212019] retro-border-sm retro-shadow-sm flex items-center justify-center text-[#D88B32] cursor-pointer shrink-0"
                 >
                   <Star className="w-4 h-4 fill-current" />
                 </motion.button>

@@ -14,10 +14,11 @@
     --text-on-surface-variant: #58413f;
     --primary-red: #a92f2e;
     --border-dark: #171717;
+    --shadow-tactile: #171717;
   }
 
   .dark {
-    --bg-surface: #181711;
+    --bg-surface: #1d1c11;
     --surface-container-lowest: #212019;
     --surface-container-low: #2b2921;
     --surface-container: #333128;
@@ -25,8 +26,9 @@
     --surface-container-highest: #474439;
     --text-on-surface: #f6f1de;
     --text-on-surface-variant: #c8bead;
-    --primary-red: #ca4843;
-    --border-dark: #0f0e0a;
+    --primary-red: #cf4a48;
+    --border-dark: #474439;
+    --shadow-tactile: #0c0b07;
   }
 
   html, body {
@@ -34,65 +36,97 @@
     margin: 0;
     padding: 0;
     min-height: 100%;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     overscroll-behavior-y: none;
     background-color: var(--bg-surface);
     color: var(--text-on-surface);
+    -webkit-tap-highlight-color: transparent;
   }
 
   h1, h2, h3, h4, h5, h6, .font-heading {
-    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-family: 'Bricolage Grotesque', 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+
+  code, pre, .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible {
+    outline: 2px solid var(--primary-red);
+    outline-offset: 2px;
   }
 }
 
-/* Custom retro tactile utilities */
+/* Tactile Retro Borders & Offset Shadows */
 .retro-border {
-  border: 2.5px solid #171717;
-}
-
-.retro-border-sm {
   border: 2px solid #171717;
 }
 
-.dark .retro-border,
+.retro-border-sm {
+  border: 1.5px solid #171717;
+}
+
+.dark .retro-border {
+  border-color: #474439;
+}
+
 .dark .retro-border-sm {
-  border-color: #38352b;
+  border-color: #474439;
 }
 
 .retro-shadow {
-  box-shadow: 3px 3px 0px #171717;
+  box-shadow: 0 3px 0 #171717;
 }
 
 .retro-shadow-sm {
-  box-shadow: 2px 2px 0px #171717;
+  box-shadow: 0 2px 0 #171717;
 }
 
 .retro-shadow-lg {
-  box-shadow: 4px 4px 0px #171717;
+  box-shadow: 0 5px 0 #171717;
 }
 
-.dark .retro-shadow,
-.dark .retro-shadow-sm,
+.dark .retro-shadow {
+  box-shadow: 0 3px 0 #0c0b07;
+}
+
+.dark .retro-shadow-sm {
+  box-shadow: 0 2px 0 #0c0b07;
+}
+
 .dark .retro-shadow-lg {
-  box-shadow-color: #000000;
+  box-shadow: 0 5px 0 #0c0b07;
 }
 
 .btn-retro-active {
-  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .btn-retro-active:active {
-  transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0px #171717;
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #171717 !important;
+}
+
+/* Subtle editorial dot pattern for hero accents */
+.bg-paper-dots {
+  background-image: radial-gradient(rgba(23, 23, 23, 0.08) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.dark .bg-paper-dots {
+  background-image: radial-gradient(rgba(246, 241, 222, 0.08) 1px, transparent 1px);
 }
 
 /* Safe area insets for mobile */
 .pb-safe {
-  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 
 .pt-safe {
-  padding-top: max(0.5rem, env(safe-area-inset-top));
+  padding-top: max(0.35rem, env(safe-area-inset-top));
 }
 
 /* Dynamic accent color utilities */
@@ -115,6 +149,14 @@
 
 /* Hide scrollbar for IE, Edge and Firefox */
 .no-scrollbar {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

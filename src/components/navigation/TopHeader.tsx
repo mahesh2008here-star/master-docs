@@ -19,67 +19,77 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onBack,
   onOpenSettings,
 }) => {
-  const isSubPage = activeTab === 'reader' || activeTab === 'search';
+  const isSubPage = activeTab === 'reader' || activeTab === 'search' || activeTab === 'support';
+
+  const contextLabel =
+    subtitle ||
+    (activeTab === 'reader'
+      ? 'Reader'
+      : activeTab === 'vault'
+      ? 'Secure Vault'
+      : activeTab === 'support'
+      ? 'Support'
+      : activeTab === 'favourites'
+      ? 'Saved'
+      : activeTab === 'recent'
+      ? 'Recent'
+      : activeTab === 'settings'
+      ? 'Settings'
+      : activeTab === 'search'
+      ? 'Search'
+      : 'Library');
 
   return (
-    <header className="sticky top-0 left-0 right-0 z-40 w-full pt-safe bg-[#fff9e7]/95 dark:bg-[#181711]/95 backdrop-blur-xl border-b border-black/10 dark:border-white/10 shadow-xs">
-      <div className="h-16 px-3 sm:px-4 flex items-center justify-between gap-2 max-w-4xl mx-auto">
-        {/* Left Section: Back button & Title */}
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          {isSubPage && onBack && (
+    <header className="sticky top-0 left-0 right-0 z-40 w-full pt-safe bg-[#fff9e7]/95 dark:bg-[#1d1c11]/95 backdrop-blur-md border-b-2 border-[#171717] dark:border-[#38352b]">
+      <div className="h-14 px-3 sm:px-4 flex items-center justify-between gap-2 max-w-2xl mx-auto">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          {isSubPage && onBack ? (
             <motion.button
-              whileTap={{ scale: 0.9 }}
+              whileTap={{ scale: 0.92 }}
               onClick={onBack}
               aria-label="Navigate back"
-              className="w-10 h-10 rounded-xl bg-[#f9f4e1] dark:bg-[#2b2921] flex items-center justify-center text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm retro-shadow-sm cursor-pointer shrink-0"
+              className="w-10 h-10 rounded-xl bg-white dark:bg-[#212019] flex items-center justify-center text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm retro-shadow-sm cursor-pointer shrink-0"
             >
-              <AnimatedIcon icon={ArrowLeft} className="w-5 h-5" />
+              <AnimatedIcon icon={ArrowLeft} className="w-4 h-4" />
             </motion.button>
+          ) : (
+            <div
+              style={{ backgroundColor: 'var(--primary-red)' }}
+              className="w-9 h-9 rounded-xl retro-border-sm retro-shadow-sm flex items-center justify-center text-white shrink-0"
+            >
+              <AnimatedIcon icon={BookOpen} className="w-4 h-4 text-white" />
+            </div>
           )}
 
-          {/* Docs Badge */}
-          <div className="h-9 px-2.5 rounded-lg bg-[#f3eedc] dark:bg-[#333128] retro-border-sm border-[#171717] flex items-center justify-center gap-1.5 shrink-0 retro-shadow-sm">
-            <AnimatedIcon icon={BookOpen} className="w-4 h-4 text-[var(--primary-red)]" float />
-            <span className="font-heading text-[10px] font-bold uppercase tracking-wider text-[#1d1c11] dark:text-[#f6f1de]">
-              DOCS
-            </span>
-          </div>
-
-          {/* App Title */}
-          <div className="flex flex-col min-w-0">
-            <span className="font-heading text-xs sm:text-sm font-bold uppercase tracking-wider text-[#1d1c11] dark:text-[#f6f1de] truncate">
+          <div className="flex flex-col min-w-0 leading-tight">
+            <span className="font-heading text-sm sm:text-base font-extrabold tracking-tight text-[#1d1c11] dark:text-[#f6f1de] whitespace-nowrap truncate">
               MASTER DOCS
             </span>
-            <span className="font-sans text-[10px] uppercase tracking-widest text-[#58413f] dark:text-[#c8bead] truncate">
-              {subtitle ||
-                (activeTab === 'reader'
-                  ? 'Document View'
-                  : activeTab === 'vault'
-                  ? 'Secure Vault'
-                  : activeTab)}
+            <span className="font-sans text-[10px] font-semibold uppercase tracking-wider text-[#58413f] dark:text-[#c8bead] truncate">
+              {contextLabel}
             </span>
           </div>
         </div>
 
-        {/* Right Section: Actions */}
         <div className="flex items-center gap-2 shrink-0">
           {activeTab !== 'search' && (
             <motion.button
-              whileTap={{ scale: 0.9 }}
+              whileTap={{ scale: 0.92 }}
               onClick={onOpenSearch}
               aria-label="Search documents"
-              className="w-10 h-10 rounded-xl bg-[#f9f4e1] dark:bg-[#2b2921] flex items-center justify-center text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm retro-shadow-sm cursor-pointer"
+              className="w-10 h-10 rounded-xl bg-white dark:bg-[#212019] flex items-center justify-center text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm retro-shadow-sm cursor-pointer"
             >
               <AnimatedIcon icon={Search} className="w-4 h-4" />
             </motion.button>
           )}
 
           <motion.button
-            whileTap={{ scale: 0.9 }}
+            whileTap={{ scale: 0.92 }}
             onClick={onOpenSettings}
             style={{ backgroundColor: 'var(--primary-red)' }}
-            className="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-xs cursor-pointer transition-colors shrink-0"
-            title="Account & Settings"
+            aria-label="Open Settings"
+            className="w-10 h-10 rounded-xl retro-border-sm retro-shadow-sm flex items-center justify-center text-white cursor-pointer shrink-0"
+            title="Settings & Support"
           >
             <AnimatedIcon icon={User} className="w-4 h-4 text-white" />
           </motion.button>

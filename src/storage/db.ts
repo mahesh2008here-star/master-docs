@@ -4,11 +4,12 @@ import {
   AppSettings,
   ReadingSession,
   VaultSecurityConfig,
+  ContributorEntry,
 } from '../types/document';
 import { generateSamplePdfBytes, uint8ArrayToDataUri } from '../utils/fileHelpers';
 
 const DB_NAME = 'MasterDocsVault';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 export interface MasterDocsDBSchema {
   documents: {
@@ -28,6 +29,11 @@ export interface MasterDocsDBSchema {
   vault_security: {
     key: string;
     value: VaultSecurityConfig;
+  };
+  contributors: {
+    key: string;
+    value: ContributorEntry;
+    indexes: { 'by-utr-hash': string; 'by-verified': string };
   };
 }
 
@@ -55,6 +61,12 @@ export function getDB(): Promise<IDBPDatabase<MasterDocsDBSchema>> {
 
         if (!db.objectStoreNames.contains('vault_security')) {
           db.createObjectStore('vault_security');
+        }
+
+        if (!db.objectStoreNames.contains('contributors')) {
+          const contribStore = db.createObjectStore('contributors', { keyPath: 'id' });
+          contribStore.createIndex('by-utr-hash', 'utrHash');
+          contribStore.createIndex('by-verified', 'verifiedAt');
         }
       },
     });
@@ -104,18 +116,23 @@ export async function toggleFavorite(id: string): Promise<boolean> {
 
 export async function setDocumentPrivate(
   id: string,
-  isPrivate: boolean
+  isPrivate: boolean,
+  extraFields?: Partial<DocumentItem>
 ): Promise<DocumentItem | null> {
   const db = await getDB();
   const doc = await db.get('documents', id);
   if (!doc) return null;
-  doc.isPrivate = isPrivate;
+  const updated: DocumentItem = {
+    ...doc,
+    ...extraFields,
+    isPrivate,
+  };
   if (isPrivate) {
-    // Remove from public recent reading history when moved to private vault
+    updated.isFavorite = false;
     await db.delete('recents', id);
   }
-  await db.put('documents', doc);
-  return doc;
+  await db.put('documents', updated);
+  return updated;
 }
 
 export async function updateReadingProgress(
@@ -181,6 +198,25 @@ export async function getVaultSecurityConfig(): Promise<VaultSecurityConfig | nu
 export async function saveVaultSecurityConfig(config: VaultSecurityConfig): Promise<void> {
   const db = await getDB();
   await db.put('vault_security', config, 'lock_config');
+}
+
+export async function getAllContributors(): Promise<ContributorEntry[]> {
+  const db = await getDB();
+  const list = await db.getAll('contributors');
+  return list.sort(
+    (a, b) => new Date(b.verifiedAt).getTime() - new Date(a.verifiedAt).getTime()
+  );
+}
+
+export async function hasContributorUtrHash(utrHash: string): Promise<boolean> {
+  const db = await getDB();
+  const existing = await db.getFromIndex('contributors', 'by-utr-hash', utrHash);
+  return Boolean(existing);
+}
+
+export async function saveContributor(entry: ContributorEntry): Promise<void> {
+  const db = await getDB();
+  await db.put('contributors', entry);
 }
 
 export async function seedDemoDocuments(): Promise<DocumentItem[]> {

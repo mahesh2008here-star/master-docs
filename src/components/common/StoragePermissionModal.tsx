@@ -27,7 +27,7 @@ export const StoragePermissionModal: React.FC<StoragePermissionModalProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: 14 }}
             transition={{ duration: 0.2 }}
-            className="w-full max-w-sm bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl p-5 sm:p-6 retro-border retro-shadow-lg flex flex-col gap-4"
+            className="w-full max-w-sm bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl p-5 retro-border retro-shadow-lg flex flex-col gap-4"
           >
             <div className="flex items-center gap-3">
               <div
@@ -40,13 +40,13 @@ export const StoragePermissionModal: React.FC<StoragePermissionModalProps> = ({
                 <span className="inline-block px-2 py-0.5 rounded-full bg-[#ede8d6] dark:bg-[#3d3a30] retro-border-sm font-heading font-bold text-[10px] uppercase tracking-wider text-[#1d1c11] dark:text-[#f6f1de] mb-1">
                   FIRST-TIME SETUP
                 </span>
-                <h2 className="font-heading font-bold text-base sm:text-lg text-[#1d1c11] dark:text-[#f6f1de] leading-tight">
+                <h2 className="font-heading font-bold text-base text-[#1d1c11] dark:text-[#f6f1de] leading-tight">
                   Allow All Files Access
                 </h2>
               </div>
             </div>
 
-            <p className="font-sans text-xs sm:text-sm text-[#58413f] dark:text-[#c8bead] leading-relaxed">
+            <p className="font-sans text-xs text-[#58413f] dark:text-[#c8bead] leading-relaxed">
               {nativeAndroid
                 ? 'Grant "Manage All Files" permission so MASTER DOCS can automatically scan your device storage and show all your PDFs, Word docs, spreadsheets, slides, and notes right on the Home screen.'
                 : 'Enable local storage access to scan or select documents from your device and organize every PDF, Word, Excel, PowerPoint, and text file right on your Home screen.'}
@@ -79,7 +79,7 @@ export const StoragePermissionModal: React.FC<StoragePermissionModalProps> = ({
                 type="button"
                 disabled={isBusy}
                 onClick={onSkip}
-                className="w-full min-h-[44px] px-4 rounded-xl bg-white dark:bg-[#212019] text-[#58413f] dark:text-[#c8bead] font-heading font-bold text-xs uppercase tracking-wider retro-border-sm cursor-pointer"
+                className="w-full min-h-[42px] px-4 rounded-xl bg-white dark:bg-[#212019] text-[#58413f] dark:text-[#c8bead] font-heading font-bold text-xs uppercase tracking-wider retro-border-sm cursor-pointer"
               >
                 Not Now
               </button>

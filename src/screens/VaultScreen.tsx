@@ -293,11 +293,11 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
     confirmLabel: string,
     disabled = false
   ) => (
-    <div className="flex flex-col items-center gap-4 w-full max-w-[290px] mx-auto">
+    <div className="flex flex-col items-center gap-3 w-full max-w-[280px] mx-auto">
       {/* PIN Dot Indicators */}
-      <div className="flex items-center justify-center gap-2.5 min-h-[36px] px-4 py-2 rounded-xl bg-white dark:bg-[#212019] retro-border-sm w-full">
+      <div className="flex items-center justify-center gap-2.5 min-h-[42px] px-4 py-2 rounded-xl bg-white dark:bg-[#212019] retro-border-sm w-full">
         {currentDigits.length === 0 ? (
-          <span className="font-sans text-xs text-[#58413f]/65 dark:text-[#c8bead]/65">
+          <span className="font-sans text-xs text-[#58413f]/70 dark:text-[#c8bead]/70">
             Enter 4–8 digit PIN
           </span>
         ) : (
@@ -307,22 +307,22 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
               initial={{ scale: 0.6 }}
               animate={{ scale: 1 }}
               style={{ backgroundColor: 'var(--primary-red)' }}
-              className="w-3 h-3 rounded-full border border-[#171717]"
+              className="w-3.5 h-3.5 rounded-full border border-[#171717]"
             />
           ))
         )}
       </div>
 
       {/* 3x4 Android Keypad Grid */}
-      <div className="grid grid-cols-3 gap-2.5 w-full">
+      <div className="grid grid-cols-3 gap-2 w-full">
         {PIN_DIGITS.map((digit) => (
           <motion.button
             key={digit}
             type="button"
             disabled={disabled}
-            whileTap={{ scale: 0.9 }}
+            whileTap={{ scale: 0.92 }}
             onClick={() => handlePinDigitPress(digit)}
-            className="h-14 rounded-2xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-xl tabular-nums retro-border-sm retro-shadow-sm cursor-pointer disabled:opacity-40 flex items-center justify-center"
+            className="h-12 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-lg tabular-nums retro-border-sm retro-shadow-sm cursor-pointer disabled:opacity-40 flex items-center justify-center hover:bg-[#f3eedc] dark:hover:bg-[#333128]"
           >
             {digit}
           </motion.button>
@@ -331,20 +331,20 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
         <motion.button
           type="button"
           disabled={disabled || currentDigits.length === 0}
-          whileTap={{ scale: 0.9 }}
+          whileTap={{ scale: 0.92 }}
           onClick={handlePinBackspace}
           aria-label="Backspace"
-          className="h-14 rounded-2xl bg-[#ede8d6] dark:bg-[#3d3a30] text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm retro-shadow-sm cursor-pointer disabled:opacity-40 flex items-center justify-center"
+          className="h-12 rounded-xl bg-[#ede8d6] dark:bg-[#3d3a30] text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm retro-shadow-sm cursor-pointer disabled:opacity-40 flex items-center justify-center"
         >
-          <Delete className="w-5 h-5" />
+          <Delete className="w-4 h-4" />
         </motion.button>
 
         <motion.button
           type="button"
           disabled={disabled}
-          whileTap={{ scale: 0.9 }}
+          whileTap={{ scale: 0.92 }}
           onClick={() => handlePinDigitPress('0')}
-          className="h-14 rounded-2xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-xl tabular-nums retro-border-sm retro-shadow-sm cursor-pointer disabled:opacity-40 flex items-center justify-center"
+          className="h-12 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-lg tabular-nums retro-border-sm retro-shadow-sm cursor-pointer disabled:opacity-40 flex items-center justify-center hover:bg-[#f3eedc] dark:hover:bg-[#333128]"
         >
           0
         </motion.button>
@@ -352,12 +352,12 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
         <motion.button
           type="button"
           disabled={disabled || currentDigits.length < 4}
-          whileTap={{ scale: 0.9 }}
+          whileTap={{ scale: 0.92 }}
           onClick={onConfirmTap}
           style={{
             backgroundColor: currentDigits.length >= 4 ? 'var(--primary-red)' : undefined,
           }}
-          className={`h-14 rounded-2xl font-heading font-bold text-xs uppercase tracking-wider retro-border-sm retro-shadow-sm cursor-pointer disabled:opacity-45 flex items-center justify-center ${
+          className={`h-12 rounded-xl font-heading font-bold text-xs uppercase tracking-wider retro-border-sm retro-shadow-sm cursor-pointer disabled:opacity-45 flex items-center justify-center ${
             currentDigits.length >= 4
               ? 'text-white'
               : 'bg-[#ede8d6] dark:bg-[#3d3a30] text-[#58413f] dark:text-[#c8bead]'
@@ -377,7 +377,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
 
     return (
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col w-full space-y-4 pb-28 min-w-0"
       >
@@ -396,21 +396,21 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                 if (isUnlocked) setSubView('unlocked');
                 else setSubView('unlock');
               }}
-              className="min-h-[44px] px-3 inline-flex items-center gap-1 font-heading font-bold text-xs text-[var(--primary-red)] cursor-pointer"
+              className="inline-flex items-center gap-1 font-heading font-bold text-xs text-[var(--primary-red)] cursor-pointer"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-3.5 h-3.5" />
               <span>Cancel</span>
             </button>
           )}
         </div>
 
-        <div className="bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl p-4 sm:p-5 retro-border retro-shadow flex flex-col gap-4">
+        <div className="bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl p-5 retro-border retro-shadow flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <div
               style={{ backgroundColor: 'var(--primary-red)' }}
-              className="w-11 h-11 rounded-2xl retro-border-sm retro-shadow-sm flex items-center justify-center text-white shrink-0"
+              className="w-11 h-11 rounded-xl retro-border flex items-center justify-center text-white shrink-0 retro-shadow-sm"
             >
-              <ShieldCheck className="w-6 h-6" />
+              <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
               <h2 className="font-heading font-bold text-base text-[#1d1c11] dark:text-[#f6f1de]">
@@ -423,13 +423,13 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
               <p className="font-sans text-xs text-[#58413f] dark:text-[#c8bead]">
                 {setupStep === 'question'
                   ? 'Used to reset your Vault PIN or Password if you ever forget it.'
-                  : 'Private documents stored here stay hidden from Home, Recent, Favourites, and Search.'}
+                  : 'Private documents stay hidden from Home, Recent, Favourites, and Search.'}
               </p>
             </div>
           </div>
 
-          {/* Step Indicator Pills */}
-          <div className="grid grid-cols-3 gap-2">
+          {/* Step Indicator Bar */}
+          <div className="grid grid-cols-3 gap-1.5">
             {[
               { id: 'secret', label: '1. Lock Type' },
               { id: 'confirm', label: '2. Confirm' },
@@ -440,7 +440,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                 className={`py-1.5 px-2 rounded-lg text-center font-heading font-bold text-[10px] uppercase tracking-wider retro-border-sm ${
                   setupStep === s.id
                     ? 'bg-[#1d1c11] text-[#fff9e7] dark:bg-[#f6f1de] dark:text-[#1d1c11]'
-                    : 'bg-white/70 dark:bg-[#212019]/70 text-[#58413f] dark:text-[#c8bead]'
+                    : 'bg-[#ede8d6] dark:bg-[#3d3a30] text-[#58413f] dark:text-[#c8bead]'
                 }`}
               >
                 {s.label}
@@ -449,7 +449,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
           </div>
 
           {setupError && (
-            <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 retro-border-sm flex items-center gap-2 text-xs font-sans text-red-800 dark:text-red-200">
+            <div className="p-2.5 rounded-xl bg-red-50 dark:bg-red-950/40 retro-border-sm flex items-center gap-2 text-xs font-sans text-red-800 dark:text-red-200">
               <ShieldAlert className="w-4 h-4 shrink-0 text-[var(--primary-red)]" />
               <span>{setupError}</span>
             </div>
@@ -457,8 +457,8 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
 
           {setupStep === 'secret' && (
             <div className="flex flex-col gap-4">
-              {/* PIN vs Password selector (Android Screen Lock Style) */}
-              <div className="grid grid-cols-2 gap-2.5">
+              {/* PIN vs Password selector */}
+              <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -470,13 +470,13 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                   style={{
                     backgroundColor: lockType === 'pin' ? 'var(--primary-red)' : undefined,
                   }}
-                  className={`min-h-[46px] px-3 rounded-xl font-heading font-bold text-xs uppercase tracking-wider retro-border-sm flex items-center justify-center gap-2 cursor-pointer ${
+                  className={`min-h-[42px] px-3 rounded-xl font-heading font-bold text-xs uppercase tracking-wider retro-border-sm retro-shadow-sm flex items-center justify-center gap-1.5 cursor-pointer ${
                     lockType === 'pin'
-                      ? 'text-white retro-shadow-sm'
+                      ? 'text-white'
                       : 'bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de]'
                   }`}
                 >
-                  <KeyRound className="w-4 h-4" />
+                  <KeyRound className="w-3.5 h-3.5" />
                   <span>PIN (Digits)</span>
                 </button>
                 <button
@@ -490,13 +490,13 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                   style={{
                     backgroundColor: lockType === 'password' ? 'var(--primary-red)' : undefined,
                   }}
-                  className={`min-h-[46px] px-3 rounded-xl font-heading font-bold text-xs uppercase tracking-wider retro-border-sm flex items-center justify-center gap-2 cursor-pointer ${
+                  className={`min-h-[42px] px-3 rounded-xl font-heading font-bold text-xs uppercase tracking-wider retro-border-sm retro-shadow-sm flex items-center justify-center gap-1.5 cursor-pointer ${
                     lockType === 'password'
-                      ? 'text-white retro-shadow-sm'
+                      ? 'text-white'
                       : 'bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de]'
                   }`}
                 >
-                  <Lock className="w-4 h-4" />
+                  <Lock className="w-3.5 h-3.5" />
                   <span>Password (Text)</span>
                 </button>
               </div>
@@ -511,7 +511,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                   }}
                   className="flex flex-col gap-3"
                 >
-                  <div className="flex items-center gap-2 h-12 px-3 rounded-xl bg-white dark:bg-[#212019] retro-border-sm">
+                  <div className="flex items-center gap-2 h-11 px-3 rounded-xl bg-white dark:bg-[#212019] retro-border-sm">
                     <input
                       type={showDraftPwd ? 'text' : 'password'}
                       value={draftSecret}
@@ -526,7 +526,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                       type="button"
                       onClick={() => setShowDraftPwd((v) => !v)}
                       aria-label="Toggle password visibility"
-                      className="min-w-[40px] min-h-[40px] flex items-center justify-center text-[#58413f] dark:text-[#c8bead] cursor-pointer"
+                      className="text-[#58413f] dark:text-[#c8bead] cursor-pointer"
                     >
                       {showDraftPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -536,9 +536,9 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                     whileTap={{ scale: 0.96 }}
                     type="submit"
                     style={{ backgroundColor: 'var(--primary-red)' }}
-                    className="w-full min-h-[46px] rounded-xl text-white font-heading font-bold text-xs uppercase tracking-wider retro-border retro-shadow cursor-pointer"
+                    className="w-full min-h-[44px] rounded-xl text-white font-heading font-bold text-xs uppercase tracking-wider retro-border retro-shadow cursor-pointer"
                   >
-                    Continue
+                    CONTINUE
                   </motion.button>
                 </form>
               )}
@@ -566,15 +566,15 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                     }}
                     placeholder="Re-enter your password..."
                     autoFocus
-                    className="h-12 px-3 rounded-xl bg-white dark:bg-[#212019] text-sm font-sans text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm focus:outline-none"
+                    className="h-11 px-3 rounded-xl bg-white dark:bg-[#212019] text-sm font-sans text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm focus:outline-none"
                   />
                   <motion.button
                     whileTap={{ scale: 0.96 }}
                     type="submit"
                     style={{ backgroundColor: 'var(--primary-red)' }}
-                    className="w-full min-h-[46px] rounded-xl text-white font-heading font-bold text-xs uppercase tracking-wider retro-border retro-shadow cursor-pointer"
+                    className="w-full min-h-[44px] rounded-xl text-white font-heading font-bold text-xs uppercase tracking-wider retro-border retro-shadow cursor-pointer"
                   >
-                    Verify & Continue
+                    VERIFY &amp; CONTINUE
                   </motion.button>
                 </form>
               )}
@@ -586,7 +586,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                   setConfirmSecret('');
                   setSetupError(null);
                 }}
-                className="min-h-[44px] rounded-xl bg-white dark:bg-[#212019] text-[#58413f] dark:text-[#c8bead] font-heading font-bold text-xs uppercase retro-border-sm cursor-pointer"
+                className="min-h-[38px] rounded-xl bg-[#ede8d6] dark:bg-[#3d3a30] text-[#58413f] dark:text-[#c8bead] font-heading font-bold text-xs uppercase retro-border-sm cursor-pointer"
               >
                 Back to Edit {lockType === 'pin' ? 'PIN' : 'Password'}
               </button>
@@ -595,8 +595,8 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
 
           {setupStep === 'question' && (
             <form onSubmit={handleCompleteSetup} className="flex flex-col gap-3">
-              <div className="flex flex-col gap-1.5">
-                <label className="font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de]">
+              <div className="flex flex-col gap-1">
+                <label className="font-sans text-xs font-semibold text-[#58413f] dark:text-[#c8bead]">
                   Select Recovery Question
                 </label>
                 <select
@@ -614,8 +614,8 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
               </div>
 
               {selectedQuestionPreset === '__custom__' && (
-                <div className="flex flex-col gap-1.5">
-                  <label className="font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de]">
+                <div className="flex flex-col gap-1">
+                  <label className="font-sans text-xs font-semibold text-[#58413f] dark:text-[#c8bead]">
                     Custom Question
                   </label>
                   <input
@@ -628,8 +628,8 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                 </div>
               )}
 
-              <div className="flex flex-col gap-1.5">
-                <label className="font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de]">
+              <div className="flex flex-col gap-1">
+                <label className="font-sans text-xs font-semibold text-[#58413f] dark:text-[#c8bead]">
                   Security Answer (remember this for reset)
                 </label>
                 <input
@@ -648,7 +648,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setSetupStep('confirm')}
-                  className="min-h-[46px] px-4 rounded-xl bg-white dark:bg-[#212019] text-[#58413f] dark:text-[#c8bead] font-heading font-bold text-xs uppercase retro-border-sm cursor-pointer"
+                  className="min-h-[44px] px-4 rounded-xl bg-[#ede8d6] dark:bg-[#3d3a30] text-[#58413f] dark:text-[#c8bead] font-heading font-bold text-xs uppercase retro-border-sm cursor-pointer"
                 >
                   Back
                 </button>
@@ -657,10 +657,10 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                   type="submit"
                   disabled={savingSetup}
                   style={{ backgroundColor: 'var(--primary-red)' }}
-                  className="flex-1 min-h-[46px] rounded-xl text-white font-heading font-bold text-xs uppercase tracking-wider retro-border retro-shadow flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                  className="flex-1 min-h-[44px] rounded-xl text-white font-heading font-bold text-xs uppercase tracking-wider retro-border retro-shadow flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
                 >
                   <Check className="w-4 h-4" />
-                  <span>{savingSetup ? 'Securing...' : 'Save & Open Vault'}</span>
+                  <span>{savingSetup ? 'SECURING...' : 'SAVE & OPEN VAULT'}</span>
                 </motion.button>
               </div>
             </form>
@@ -676,7 +676,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
   if (subView === 'recovery' && vaultConfig) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col w-full space-y-4 pb-28 min-w-0"
       >
@@ -691,9 +691,9 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
               setRecoveryAnswer('');
               setSubView('unlock');
             }}
-            className="min-h-[44px] px-3 inline-flex items-center gap-1 font-heading font-bold text-xs text-[var(--primary-red)] cursor-pointer"
+            className="inline-flex items-center gap-1 font-heading font-bold text-xs text-[var(--primary-red)] cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Lock</span>
           </button>
         </div>
@@ -705,9 +705,9 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
           <div className="flex items-center gap-3">
             <div
               style={{ backgroundColor: 'var(--primary-red)' }}
-              className="w-11 h-11 rounded-2xl retro-border-sm retro-shadow-sm flex items-center justify-center text-white shrink-0"
+              className="w-11 h-11 rounded-xl retro-border flex items-center justify-center text-white shrink-0 retro-shadow-sm"
             >
-              <HelpCircle className="w-6 h-6" />
+              <HelpCircle className="w-5 h-5" />
             </div>
             <div>
               <h2 className="font-heading font-bold text-base text-[#1d1c11] dark:text-[#f6f1de]">
@@ -719,9 +719,9 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-white dark:bg-[#212019] retro-border-sm">
+          <div className="p-3 rounded-xl bg-white dark:bg-[#212019] retro-border-sm">
             <span className="font-heading font-bold text-[10px] uppercase tracking-wider text-[#58413f] dark:text-[#c8bead] block mb-1">
-              Your Security Question
+              Your Security Question:
             </span>
             <p className="font-sans font-semibold text-sm text-[#1d1c11] dark:text-[#f6f1de]">
               {vaultConfig.securityQuestion}
@@ -729,7 +729,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
           </div>
 
           {recoveryError && (
-            <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 retro-border-sm flex items-center gap-2 text-xs font-sans text-red-800 dark:text-red-200">
+            <div className="p-2.5 rounded-xl bg-red-50 dark:bg-red-950/40 retro-border-sm flex items-center gap-2 text-xs font-sans text-red-800 dark:text-red-200">
               <ShieldAlert className="w-4 h-4 shrink-0 text-[var(--primary-red)]" />
               <span>{recoveryError}</span>
             </div>
@@ -744,16 +744,16 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
             }}
             placeholder="Type your security answer..."
             autoFocus
-            className="h-12 px-3 rounded-xl bg-white dark:bg-[#212019] text-sm font-sans text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm focus:outline-none"
+            className="h-11 px-3 rounded-xl bg-white dark:bg-[#212019] text-sm font-sans text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm focus:outline-none"
           />
 
           <motion.button
             whileTap={{ scale: 0.96 }}
             type="submit"
             style={{ backgroundColor: 'var(--primary-red)' }}
-            className="w-full min-h-[46px] rounded-xl text-white font-heading font-bold text-xs uppercase tracking-wider retro-border retro-shadow cursor-pointer"
+            className="w-full min-h-[44px] rounded-xl text-white font-heading font-bold text-xs uppercase tracking-wider retro-border retro-shadow cursor-pointer"
           >
-            Verify Answer & Reset Lock
+            VERIFY ANSWER &amp; RESET LOCK
           </motion.button>
         </form>
       </motion.div>
@@ -766,7 +766,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
   if (!isUnlocked && vaultConfig) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col w-full space-y-4 pb-28 min-w-0"
       >
@@ -775,14 +775,14 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
             SECURE VAULT LOCKED
           </span>
           <span className="font-sans text-xs text-[#58413f] dark:text-[#c8bead] tabular-nums">
-            {privateDocuments.length} hidden items
+            {privateDocuments.length} hidden file(s)
           </span>
         </div>
 
-        <div className="bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl p-5 retro-border retro-shadow flex flex-col items-center gap-4">
+        <div className="bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl p-5 sm:p-6 retro-border retro-shadow flex flex-col items-center gap-4">
           <div
             style={{ backgroundColor: 'var(--primary-red)' }}
-            className="w-14 h-14 rounded-2xl retro-border-sm retro-shadow-sm flex items-center justify-center text-white"
+            className="w-14 h-14 rounded-2xl retro-border flex items-center justify-center text-white retro-shadow-sm"
           >
             <Lock className="w-7 h-7" />
           </div>
@@ -797,7 +797,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
           </div>
 
           {(unlockError || lockoutSeconds > 0) && (
-            <div className="w-full max-w-xs p-3 rounded-xl bg-red-50 dark:bg-red-950/40 retro-border-sm flex items-center justify-center gap-2 text-xs font-sans text-red-800 dark:text-red-200 text-center">
+            <div className="w-full max-w-xs p-2.5 rounded-xl bg-red-50 dark:bg-red-950/40 retro-border-sm flex items-center justify-center gap-2 text-xs font-sans text-red-800 dark:text-red-200 text-center">
               <ShieldAlert className="w-4 h-4 shrink-0 text-[var(--primary-red)]" />
               <span className="tabular-nums">
                 {lockoutSeconds > 0
@@ -822,7 +822,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
               }}
               className="w-full max-w-xs flex flex-col gap-3"
             >
-              <div className="flex items-center gap-2 h-12 px-3 rounded-xl bg-white dark:bg-[#212019] retro-border-sm">
+              <div className="flex items-center gap-2 h-11 px-3 rounded-xl bg-white dark:bg-[#212019] retro-border-sm">
                 <input
                   type={showUnlockPwd ? 'text' : 'password'}
                   disabled={lockoutSeconds > 0}
@@ -839,7 +839,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                   type="button"
                   onClick={() => setShowUnlockPwd((v) => !v)}
                   aria-label="Show or hide password"
-                  className="min-w-[40px] min-h-[40px] flex items-center justify-center text-[#58413f] dark:text-[#c8bead] cursor-pointer"
+                  className="text-[#58413f] dark:text-[#c8bead] cursor-pointer"
                 >
                   {showUnlockPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -850,10 +850,10 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                 type="submit"
                 disabled={lockoutSeconds > 0 || verifyingUnlock || !unlockSecret}
                 style={{ backgroundColor: 'var(--primary-red)' }}
-                className="w-full min-h-[46px] rounded-xl text-white font-heading font-bold text-xs uppercase tracking-wider retro-border retro-shadow flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full min-h-[44px] rounded-xl text-white font-heading font-bold text-xs uppercase tracking-wider retro-border retro-shadow flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 <Unlock className="w-4 h-4" />
-                <span>{verifyingUnlock ? 'Checking...' : 'Unlock Vault'}</span>
+                <span>{verifyingUnlock ? 'CHECKING...' : 'UNLOCK VAULT'}</span>
               </motion.button>
             </form>
           )}
@@ -865,9 +865,9 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
               setRecoveryError(null);
               setSubView('recovery');
             }}
-            className="min-h-[44px] px-4 rounded-xl text-xs font-heading font-bold uppercase tracking-wider text-[var(--primary-red)] hover:underline flex items-center gap-1.5 cursor-pointer"
+            className="mt-1 px-3 py-1.5 rounded-lg text-xs font-heading font-bold uppercase tracking-wider text-[var(--primary-red)] hover:underline flex items-center gap-1.5 cursor-pointer"
           >
-            <HelpCircle className="w-4 h-4" />
+            <HelpCircle className="w-3.5 h-3.5" />
             <span>Forgot {vaultConfig.lockType === 'pin' ? 'PIN' : 'Password'}?</span>
           </button>
         </div>
@@ -880,7 +880,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
   // =========================================================
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="flex flex-col w-full space-y-4 pb-28 min-w-0"
     >
@@ -888,64 +888,64 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
       <div className="bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl p-4 retro-border retro-shadow flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-[#249B65] text-white retro-border-sm retro-shadow-sm flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-[#249B65] retro-border-sm flex items-center justify-center text-white shrink-0 retro-shadow-sm">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <h2 className="font-heading font-bold text-sm sm:text-base text-[#1d1c11] dark:text-[#f6f1de] truncate">
+              <h2 className="font-heading font-bold text-sm text-[#1d1c11] dark:text-[#f6f1de] uppercase tracking-wider truncate">
                 Private Document Vault
               </h2>
               <p className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] tabular-nums">
-                {privateDocuments.length} private file(s) • Hidden from Home & Search
+                {privateDocuments.length} hidden file(s) • Removed from public storage • Auto-locks on exit
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
             <motion.button
-              whileTap={{ scale: 0.94 }}
+              whileTap={{ scale: 0.92 }}
               onClick={() => {
                 resetSetupWizard();
                 setSubView('setup');
               }}
               title="Change Lock or Security Question"
-              className="min-h-[44px] min-w-[44px] px-3 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm retro-shadow-sm flex items-center justify-center gap-1.5 font-heading font-bold text-xs uppercase cursor-pointer"
+              className="min-h-[38px] px-3 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm retro-shadow-sm flex items-center gap-1.5 font-heading font-bold text-[11px] uppercase cursor-pointer"
             >
-              <Settings2 className="w-4 h-4" />
+              <Settings2 className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Lock Settings</span>
             </motion.button>
 
             <motion.button
-              whileTap={{ scale: 0.94 }}
+              whileTap={{ scale: 0.92 }}
               onClick={onLock}
               style={{ backgroundColor: 'var(--primary-red)' }}
-              className="min-h-[44px] px-3.5 rounded-xl text-white retro-border-sm retro-shadow-sm flex items-center justify-center gap-1.5 font-heading font-bold text-xs uppercase cursor-pointer"
+              className="min-h-[38px] px-3 rounded-xl text-white retro-border-sm retro-shadow-sm flex items-center gap-1.5 font-heading font-bold text-[11px] uppercase cursor-pointer"
             >
-              <Lock className="w-4 h-4" />
+              <Lock className="w-3.5 h-3.5" />
               <span>Lock</span>
             </motion.button>
           </div>
         </div>
 
         {/* Vault Import & Hide Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <motion.button
             whileTap={{ scale: 0.96 }}
             onClick={onImportPrivateFile}
             style={{ backgroundColor: 'var(--primary-red)' }}
-            className="min-h-[46px] px-4 rounded-xl text-white font-heading font-bold text-xs uppercase tracking-wider retro-border retro-shadow flex items-center justify-center gap-2 cursor-pointer"
+            className="min-h-[44px] px-3.5 rounded-xl text-white font-heading font-bold text-xs uppercase tracking-wider retro-border retro-shadow flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <Plus className="w-4 h-4 shrink-0" />
-            <span>Add Private Document</span>
+            <span>ADD PRIVATE DOCUMENT</span>
           </motion.button>
 
           <motion.button
             whileTap={{ scale: 0.96 }}
             onClick={() => setShowMoveFromHomeModal(true)}
-            className="min-h-[46px] px-4 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-xs uppercase tracking-wider retro-border retro-shadow flex items-center justify-center gap-2 cursor-pointer"
+            className="min-h-[44px] px-3.5 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-xs uppercase tracking-wider retro-border retro-shadow flex items-center justify-center gap-1.5 cursor-pointer hover:bg-[#f3eedc] dark:hover:bg-[#333128]"
           >
             <FolderInput className="w-4 h-4 text-[var(--primary-red)] shrink-0" />
-            <span>Hide Existing Doc Here</span>
+            <span>HIDE EXISTING DOC HERE</span>
           </motion.button>
         </div>
       </div>
@@ -953,11 +953,11 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
       {/* Private Documents List */}
       {privateDocuments.length === 0 ? (
         <div className="p-8 text-center bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl retro-border retro-shadow flex flex-col items-center gap-2">
-          <Lock className="w-10 h-10 text-[#58413f] dark:text-[#c8bead]" />
+          <Lock className="w-10 h-10 text-[#58413f]/50 dark:text-[#c8bead]/50" />
           <h3 className="font-heading font-bold text-base text-[#1d1c11] dark:text-[#f6f1de]">
             Your Private Vault Is Empty
           </h3>
-          <p className="font-sans text-xs text-[#58413f] dark:text-[#c8bead] max-w-sm">
+          <p className="font-sans text-xs text-[#58413f] dark:text-[#c8bead] max-w-xs leading-relaxed">
             Import sensitive PDFs, IDs, or documents directly above, or move any document from your Home screen into this PIN-protected vault.
           </p>
         </div>
@@ -1002,7 +1002,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                     onClick={() => onRemoveFromVault(doc.id)}
                     title="Unhide & Move Back to Home"
                     aria-label="Move back to Home"
-                    className="w-11 h-11 rounded-xl bg-white dark:bg-[#212019] retro-border-sm flex items-center justify-center text-[#249B65] retro-shadow-sm cursor-pointer"
+                    className="w-10 h-10 rounded-xl bg-white dark:bg-[#212019] retro-border-sm retro-shadow-sm flex items-center justify-center text-[#249B65] cursor-pointer"
                   >
                     <FolderOutput className="w-4 h-4" />
                   </motion.button>
@@ -1012,7 +1012,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                     onClick={(e) => onDeleteDocument(doc.id, e)}
                     title="Delete Permanently"
                     aria-label="Delete private document"
-                    className="w-11 h-11 rounded-xl bg-white dark:bg-[#212019] retro-border-sm flex items-center justify-center text-[var(--primary-red)] retro-shadow-sm cursor-pointer"
+                    className="w-10 h-10 rounded-xl bg-white dark:bg-[#212019] retro-border-sm retro-shadow-sm flex items-center justify-center text-[var(--primary-red)] cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </motion.button>
@@ -1031,17 +1031,17 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md max-h-[80vh] bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl p-4 sm:p-5 retro-border retro-shadow-lg flex flex-col gap-3"
+              className="w-full max-w-md max-h-[80vh] bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl p-4 retro-border retro-shadow-lg flex flex-col gap-3"
             >
               <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-2.5">
-                <h3 className="font-heading font-bold text-sm uppercase tracking-wider text-[#1d1c11] dark:text-[#f6f1de]">
+                <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-[#1d1c11] dark:text-[#f6f1de]">
                   Select Document to Hide in Vault
                 </h3>
                 <button
                   type="button"
                   onClick={() => setShowMoveFromHomeModal(false)}
                   aria-label="Close"
-                  className="w-10 h-10 rounded-xl bg-white dark:bg-[#212019] retro-border-sm flex items-center justify-center text-[#1d1c11] dark:text-[#f6f1de] cursor-pointer"
+                  className="w-8 h-8 rounded-lg bg-white dark:bg-[#212019] retro-border-sm flex items-center justify-center text-[#1d1c11] dark:text-[#f6f1de] cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1049,7 +1049,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
 
               <div className="overflow-y-auto flex-1 divide-y divide-black/10 dark:divide-white/10">
                 {publicDocuments.length === 0 ? (
-                  <p className="py-8 text-center font-sans text-xs text-[#58413f] dark:text-[#c8bead]">
+                  <p className="py-6 text-center font-sans text-xs text-[#58413f] dark:text-[#c8bead]">
                     No public documents found on Home right now.
                   </p>
                 ) : (
@@ -1059,7 +1059,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                     return (
                       <div
                         key={doc.id}
-                        className="py-2.5 flex items-center justify-between gap-2.5 min-w-0"
+                        className="py-2.5 flex items-center justify-between gap-2 min-w-0"
                       >
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
                           <div
@@ -1078,7 +1078,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                         </div>
 
                         <motion.button
-                          whileTap={{ scale: 0.92 }}
+                          whileTap={{ scale: 0.94 }}
                           disabled={busy}
                           onClick={async () => {
                             setMovingDocId(doc.id);
@@ -1089,9 +1089,9 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
                             }
                           }}
                           style={{ backgroundColor: 'var(--primary-red)' }}
-                          className="min-h-[40px] px-3 rounded-xl text-white font-heading font-bold text-[11px] uppercase retro-border-sm shrink-0 cursor-pointer disabled:opacity-50"
+                          className="min-h-[34px] px-3 rounded-lg text-white font-heading font-bold text-[10px] uppercase retro-border-sm shrink-0 cursor-pointer disabled:opacity-50"
                         >
-                          {busy ? 'Locking...' : 'Hide'}
+                          {busy ? 'LOCKING...' : 'HIDE'}
                         </motion.button>
                       </div>
                     );

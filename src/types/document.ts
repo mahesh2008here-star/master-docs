@@ -20,8 +20,10 @@ export interface DocumentItem {
   modifiedAt: string;
   createdAt: string;
   isFavorite: boolean;
-  isPrivate?: boolean; // Stored inside Secure Vault & hidden from Home/Recent/Search
+  isPrivate?: boolean; // Stored inside Secure Vault & hidden from Home/Recent/Search/System Storage
   devicePath?: string; // Native Android internal storage path for scanned documents
+  originalDevicePath?: string; // Original public Android storage path before hiding in Vault
+  vaultFilePath?: string; // Native Android app-private sandbox file path inside files/secure_vault/
   pageCount: number;
   lastReadPage: number;
   readProgress: number; // 0 - 100 percentage
@@ -65,11 +67,23 @@ export interface VaultSecurityConfig {
   updatedAt: string;
 }
 
+export interface ContributorEntry {
+  id: string;
+  name: string;
+  amount: number;
+  note?: string;
+  thankYouNote?: string;
+  utrMasked: string;
+  utrHash: string;
+  verifiedAt: string;
+}
+
 export type NavigationTab =
   | 'home'
   | 'vault'
   | 'favourites'
   | 'recent'
   | 'settings'
+  | 'support'
   | 'search'
   | 'reader';

@@ -44,6 +44,7 @@ import { shareDocumentFile } from '../services/shareService';
 import { UnsupportedFileView } from '../components/common/UnsupportedFileView';
 import { AnimatedIcon } from '../components/common/AnimatedIcon';
 import { PdfViewer } from '../components/readers/PdfViewer';
+import { PptSlideViewer } from '../components/readers/PptSlideViewer';
 import {
   usePinchZoom,
   MIN_DOCUMENT_ZOOM,
@@ -446,12 +447,12 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
     >
       {/* Top Document Ribbon */}
       <div className="flex items-center justify-between mb-3 gap-2 min-w-0">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#f3eedc] dark:bg-[#333128] rounded-full retro-border-sm retro-shadow-sm min-w-0">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f3eedc] dark:bg-[#333128] retro-border-sm retro-shadow-sm min-w-0">
           <span
             style={{ backgroundColor: 'var(--primary-red)' }}
             className="w-2 h-2 rounded-full shrink-0"
           />
-          <span className="font-heading font-bold text-[10px] sm:text-[11px] text-[#1d1c11] dark:text-[#f6f1de] uppercase tracking-wider truncate">
+          <span className="font-heading font-bold text-[10px] text-[#1d1c11] dark:text-[#f6f1de] uppercase tracking-wider truncate">
             {doc.type === 'pdf'
               ? continuousScroll
                 ? 'Scroll View'
@@ -462,8 +463,8 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
               ? `Sheet ${activeSheetIndex + 1}/${Math.max(1, spreadsheetSheets.length)}`
               : `${doc.extension.toUpperCase()} Reader`}
           </span>
-          <span className="text-[#58413f] dark:text-[#c8bead] shrink-0">•</span>
-          <span className="font-heading font-bold text-[10px] sm:text-[11px] text-[#58413f] dark:text-[#c8bead] shrink-0 tabular-nums">
+          <span className="text-[10px] opacity-60 shrink-0">•</span>
+          <span className="font-heading font-bold text-[10px] text-[#58413f] dark:text-[#c8bead] shrink-0 tabular-nums">
             {displayZoom}%
           </span>
         </div>
@@ -471,10 +472,10 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
         <div className="flex items-center gap-1.5 shrink-0">
           {doc.type === 'pdf' && (
             <motion.button
-              whileTap={{ scale: 0.85 }}
+              whileTap={{ scale: 0.9 }}
               onClick={() => setContinuousScroll((v) => !v)}
               title={continuousScroll ? 'Switch to Single Page' : 'Switch to Continuous Scroll'}
-              className="w-8 h-8 rounded-lg bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center retro-border-sm retro-shadow-sm cursor-pointer"
+              className="w-8 h-8 rounded-lg bg-[#f3eedc] dark:bg-[#333128] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center retro-border-sm retro-shadow-sm cursor-pointer"
             >
               {continuousScroll ? (
                 <FileText className="w-4 h-4" />
@@ -485,11 +486,11 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
           )}
 
           <motion.button
-            whileTap={{ scale: 0.85 }}
+            whileTap={{ scale: 0.9 }}
             onClick={toggleBookmark}
             title="Toggle Bookmark"
             style={{ color: isBookmarked ? 'var(--primary-red)' : undefined }}
-            className={`w-8 h-8 rounded-lg bg-white dark:bg-[#212019] flex items-center justify-center retro-border-sm retro-shadow-sm cursor-pointer ${
+            className={`w-8 h-8 rounded-lg bg-[#f3eedc] dark:bg-[#333128] flex items-center justify-center retro-border-sm retro-shadow-sm cursor-pointer ${
               isBookmarked ? '' : 'text-[#58413f] dark:text-[#c8bead]'
             }`}
           >
@@ -500,29 +501,29 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
           </motion.button>
 
           <motion.button
-            whileTap={{ scale: 0.85 }}
+            whileTap={{ scale: 0.9 }}
             onClick={() => setShowInDocSearch((v) => !v)}
             title="Search Inside Document"
             style={{ color: showInDocSearch ? 'var(--primary-red)' : undefined }}
-            className="w-8 h-8 rounded-lg bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center retro-border-sm retro-shadow-sm cursor-pointer"
+            className="w-8 h-8 rounded-lg bg-[#f3eedc] dark:bg-[#333128] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center retro-border-sm retro-shadow-sm cursor-pointer"
           >
             <AnimatedIcon icon={Search} className="w-4 h-4" />
           </motion.button>
 
           <motion.button
-            whileTap={{ scale: 0.85 }}
+            whileTap={{ scale: 0.9 }}
             onClick={handleShare}
             title="Share / Export File"
-            className="w-8 h-8 rounded-lg bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center retro-border-sm retro-shadow-sm cursor-pointer"
+            className="w-8 h-8 rounded-lg bg-[#f3eedc] dark:bg-[#333128] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center retro-border-sm retro-shadow-sm cursor-pointer"
           >
             <AnimatedIcon icon={Share2} className="w-4 h-4" />
           </motion.button>
 
           <motion.button
-            whileTap={{ scale: 0.85 }}
+            whileTap={{ scale: 0.9 }}
             onClick={() => setShowDocInfo((v) => !v)}
             title="Document Details"
-            className="w-8 h-8 rounded-lg bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center retro-border-sm retro-shadow-sm cursor-pointer"
+            className="w-8 h-8 rounded-lg bg-[#f3eedc] dark:bg-[#333128] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center retro-border-sm retro-shadow-sm cursor-pointer"
           >
             <AnimatedIcon icon={Info} className="w-4 h-4" />
           </motion.button>
@@ -641,9 +642,9 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
-            className="mb-4 p-4 bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl retro-border retro-shadow flex flex-col gap-1.5 min-w-0"
+            className="mb-4 p-3.5 bg-[#f9f4e1] dark:bg-[#2b2921] rounded-xl retro-border retro-shadow flex flex-col gap-1.5 min-w-0"
           >
-            <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-2 mb-1">
+            <div className="flex items-center justify-between border-b border-black/10 dark:border-white/10 pb-1.5 mb-1">
               <h4 className="font-heading font-bold text-xs uppercase tracking-wider text-[#1d1c11] dark:text-[#f6f1de]">
                 Document Metadata
               </h4>
@@ -672,11 +673,11 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
         className={`relative w-full rounded-2xl retro-border retro-shadow-lg transition-colors duration-200 overflow-hidden min-w-0 ${getThemeStyles()}`}
       >
         {/* Sheet Top Header */}
-        <div className="px-4 py-3 bg-black/5 dark:bg-white/5 border-b border-black/10 dark:border-white/10 flex items-center justify-between gap-2 min-w-0">
+        <div className="px-4 py-2.5 bg-black/5 dark:bg-white/5 border-b-2 border-[#171717] dark:border-[#38352b] flex items-center justify-between gap-2 min-w-0">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <span
               style={{ backgroundColor: 'var(--primary-red)' }}
-              className="px-2 py-0.5 text-white rounded font-heading font-bold text-[10px] uppercase shrink-0"
+              className="px-2 py-0.5 text-white rounded font-heading font-bold text-[10px] uppercase retro-border-sm shrink-0"
             >
               {doc.extension.toUpperCase()}
             </span>
@@ -684,7 +685,7 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
               {doc.name}
             </span>
           </div>
-          <span className="font-heading font-bold text-[11px] opacity-70 shrink-0">
+          <span className="font-heading font-bold text-[11px] opacity-75 shrink-0 tabular-nums">
             {formatFileSize(doc.size)}
           </span>
         </div>
@@ -899,84 +900,12 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
               )}
             </div>
           ) : doc.type === 'powerpoint' ? (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentPage}
-                initial={{ opacity: 0, x: 8 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -8 }}
-                transition={{ duration: 0.18 }}
-                className="flex flex-col gap-4 min-w-0"
-              >
-                {slides.length > 0 ? (
-                  (() => {
-                    const slide = slides[Math.min(currentPage - 1, slides.length - 1)];
-                    return (
-                      <div
-                        className="p-4 sm:p-6 bg-black/5 dark:bg-white/5 rounded-2xl retro-border-sm flex flex-col gap-3 min-w-0"
-                        style={{ fontSize: `${textScalePx}px` }}
-                      >
-                        <span
-                          style={{ color: 'var(--primary-red)' }}
-                          className="font-heading font-bold text-xs uppercase tracking-widest"
-                        >
-                          SLIDE {slide.slideNumber} OF {slides.length}
-                        </span>
-                        <h2 className="font-heading text-xl sm:text-2xl font-bold break-words">
-                          {highlightPlainText(slide.title, searchInDocQuery)}
-                        </h2>
-
-                        {slide.images.length > 0 && (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 my-1">
-                            {slide.images.map((imgSrc, imgIdx) => (
-                              <div
-                                key={imgIdx}
-                                className="rounded-xl overflow-hidden retro-border-sm bg-white p-1.5 flex items-center justify-center"
-                              >
-                                <img
-                                  src={imgSrc}
-                                  alt={`Slide ${slide.slideNumber} graphic ${imgIdx + 1}`}
-                                  className="w-full h-auto object-contain max-h-[280px] rounded"
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {slide.bulletPoints.length > 0 && (
-                          <ul className="flex flex-col gap-2">
-                            {slide.bulletPoints.map((point, idx) => (
-                              <li key={idx} className="font-sans flex items-start gap-2 break-words">
-                                <span
-                                  style={{ color: 'var(--primary-red)' }}
-                                  className="font-bold shrink-0"
-                                >
-                                  •
-                                </span>
-                                <span>{highlightPlainText(point, searchInDocQuery)}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-
-                        {slide.notes && (
-                          <div className="mt-2 pt-3 border-t border-black/10 dark:border-white/10">
-                            <span className="font-heading font-bold text-[10px] uppercase tracking-wider opacity-70 block mb-1">
-                              Speaker Notes
-                            </span>
-                            <p className="font-sans text-xs opacity-85 whitespace-pre-wrap break-words">
-                              {highlightPlainText(slide.notes, searchInDocQuery)}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()
-                ) : (
-                  <p className="text-sm font-sans opacity-75">No slides found in deck.</p>
-                )}
-              </motion.div>
-            </AnimatePresence>
+            <PptSlideViewer
+              slides={slides}
+              currentPage={currentPage}
+              zoom={zoom}
+              searchQuery={searchInDocQuery}
+            />
           ) : (
             <div
               style={{ fontSize: `${textScalePx}px` }}
@@ -1046,9 +975,9 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
                   onNotify('error', `Enter a page number between 1 and ${totalPages}.`);
                 }
               }}
-              className="w-full max-w-xs bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl p-5 retro-border retro-shadow-lg flex flex-col gap-3"
+              className="w-full max-w-xs bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl p-4 retro-border retro-shadow-lg flex flex-col gap-3"
             >
-              <h3 className="font-heading font-bold text-sm uppercase tracking-wider text-[#1d1c11] dark:text-[#f6f1de]">
+              <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-[#1d1c11] dark:text-[#f6f1de]">
                 Jump to {doc.type === 'powerpoint' ? 'Slide' : doc.type === 'excel' ? 'Sheet' : 'Page'} (1–{totalPages})
               </h3>
               <input
@@ -1058,20 +987,20 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
                 value={jumpInput}
                 onChange={(e) => setJumpInput(e.target.value)}
                 autoFocus
-                className="h-11 px-3 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm text-sm font-heading font-bold focus:outline-none"
+                className="h-10 px-3 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm text-sm font-heading font-bold tabular-nums focus:outline-none"
               />
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => setShowJumpModal(false)}
-                  className="flex-1 h-10 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-xs uppercase retro-border-sm cursor-pointer"
+                  className="flex-1 min-h-[38px] rounded-xl bg-[#ede8d6] dark:bg-[#3d3a30] text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-xs uppercase retro-border-sm cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   style={{ backgroundColor: 'var(--primary-red)' }}
-                  className="flex-1 h-10 rounded-xl text-white font-heading font-bold text-xs uppercase retro-border-sm cursor-pointer"
+                  className="flex-1 min-h-[38px] rounded-xl text-white font-heading font-bold text-xs uppercase retro-border-sm cursor-pointer"
                 >
                   Go
                 </button>
@@ -1083,21 +1012,21 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
 
       {/* FLOATING RETRO-TACTILE READER TOOLBAR DOCK */}
       <div className="fixed bottom-4 left-4 right-4 z-40 max-w-md mx-auto">
-        <div className="w-full bg-[#f3eedc]/95 dark:bg-[#333128]/95 backdrop-blur-md rounded-2xl p-2.5 retro-border retro-shadow-lg flex flex-col gap-2">
+        <div className="w-full bg-[#f3eedc]/95 dark:bg-[#333128]/95 backdrop-blur-md rounded-2xl p-2 retro-border retro-shadow-lg flex flex-col gap-2">
           {/* Controls Row 1 */}
           <div className="flex items-center justify-between gap-2">
             <motion.button
-              whileTap={{ scale: 0.9 }}
+              whileTap={{ scale: 0.92 }}
               onClick={handlePrevPage}
               disabled={currentPage <= 1}
               aria-label="Previous Page"
-              className="h-10 w-10 sm:w-11 sm:h-11 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center retro-border-sm retro-shadow-sm cursor-pointer disabled:opacity-45 shrink-0"
+              className="h-10 w-10 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center retro-border-sm retro-shadow-sm cursor-pointer disabled:opacity-45 shrink-0"
             >
               <ChevronLeft className="w-5 h-5" />
             </motion.button>
 
             <motion.button
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.96 }}
               onClick={() => {
                 if (totalPages > 1) {
                   setJumpInput(String(currentPage));
@@ -1105,9 +1034,9 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
                 }
               }}
               aria-label="Jump to page"
-              className="h-10 sm:h-11 flex-1 px-3 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center gap-1.5 retro-border-sm retro-shadow-sm cursor-pointer min-w-0"
+              className="h-10 flex-1 px-3 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center gap-1.5 retro-border-sm retro-shadow-sm cursor-pointer min-w-0 tabular-nums"
             >
-              <BookOpen className="w-4 h-4 text-[var(--primary-red)] shrink-0" />
+              <BookOpen className="w-3.5 h-3.5 text-[var(--primary-red)] shrink-0" />
               <span className="font-heading font-bold text-sm tracking-tight">{currentPage}</span>
               <span className="font-heading text-xs text-[#58413f] dark:text-[#c8bead]">
                 / {totalPages}
@@ -1115,49 +1044,49 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
             </motion.button>
 
             <motion.button
-              whileTap={{ scale: 0.9 }}
+              whileTap={{ scale: 0.92 }}
               onClick={handleNextPage}
               disabled={currentPage >= totalPages}
               aria-label="Next Page"
-              className="h-10 w-10 sm:w-11 sm:h-11 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center retro-border-sm retro-shadow-sm cursor-pointer disabled:opacity-45 shrink-0"
+              className="h-10 w-10 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center retro-border-sm retro-shadow-sm cursor-pointer disabled:opacity-45 shrink-0"
             >
               <ChevronRight className="w-5 h-5" />
             </motion.button>
 
             <motion.button
-              whileTap={{ scale: 0.9 }}
+              whileTap={{ scale: 0.92 }}
               onClick={() => {
                 const nextMode = fitMode === 'page' ? 'width' : 'page';
                 setFitMode(nextMode);
                 setZoom(100);
               }}
               aria-label="Toggle Fit Mode"
-              className="h-10 sm:h-11 px-2.5 sm:px-3 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center gap-1 retro-border-sm retro-shadow-sm cursor-pointer shrink-0"
+              className="h-10 px-2.5 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center gap-1 retro-border-sm retro-shadow-sm cursor-pointer shrink-0"
             >
-              <Maximize2 className="w-4 h-4" />
-              <span className="font-heading font-bold text-xs uppercase hidden sm:inline">
+              <Maximize2 className="w-3.5 h-3.5" />
+              <span className="font-heading font-bold text-[10px] uppercase hidden sm:inline">
                 {fitMode}
               </span>
             </motion.button>
           </div>
 
           {/* Controls Row 2 */}
-          <div className="flex items-center justify-between pt-1 gap-2">
+          <div className="flex items-center justify-between pt-0.5 gap-2">
             {/* Zoom Stepper */}
-            <div className="flex items-center bg-[#f9f4e1] dark:bg-[#2b2921] rounded-xl p-0.5 retro-border-sm retro-shadow-sm shrink-0">
+            <div className="flex items-center bg-[#ede8d6] dark:bg-[#3d3a30] rounded-xl p-0.5 retro-border-sm shrink-0">
               <motion.button
-                whileTap={{ scale: 0.88 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={handleZoomOut}
                 aria-label="Zoom out"
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center retro-border-sm cursor-pointer"
+                className="w-8 h-8 rounded-lg bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center retro-border-sm cursor-pointer"
               >
                 <Minus className="w-3.5 h-3.5" />
               </motion.button>
-              <span className="px-2 font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de] tabular-nums">
+              <span className="px-2.5 font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de] tabular-nums">
                 {displayZoom}%
               </span>
               <motion.button
-                whileTap={{ scale: 0.88 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={handleZoomIn}
                 aria-label="Zoom in"
                 className="w-8 h-8 rounded-lg bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] flex items-center justify-center retro-border-sm cursor-pointer"
@@ -1167,7 +1096,7 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
             </div>
 
             {/* Paper Tone Toggles */}
-            <div className="flex items-center gap-1 bg-[#f9f4e1] dark:bg-[#2b2921] rounded-xl p-1 retro-border-sm retro-shadow-sm shrink-0">
+            <div className="flex items-center gap-1 bg-[#ede8d6] dark:bg-[#3d3a30] rounded-xl p-0.5 retro-border-sm shrink-0">
               {[
                 { id: 'parchment', title: 'Warm Paper', icon: BookOpen },
                 { id: 'white', title: 'Pure White', icon: Sun },
@@ -1179,12 +1108,12 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
                 return (
                   <motion.button
                     key={t.id}
-                    whileTap={{ scale: 0.88 }}
+                    whileTap={{ scale: 0.9 }}
                     onClick={() => setTheme(t.id as ReaderTheme)}
                     title={t.title}
                     style={{ color: isActive ? 'var(--primary-red)' : undefined }}
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
-                      isActive ? 'bg-white dark:bg-[#212019] retro-border-sm' : 'text-[#58413f]'
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                      isActive ? 'bg-white dark:bg-[#212019] retro-border-sm' : 'text-[#58413f] dark:text-[#c8bead]'
                     }`}
                   >
                     <IconComp className="w-3.5 h-3.5" />

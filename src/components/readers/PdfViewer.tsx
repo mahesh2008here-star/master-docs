@@ -87,8 +87,16 @@ const PdfPageCanvas: React.FC<PdfPageCanvasProps> = ({
         const cssViewport = page.getViewport({ scale: Math.max(0.25, cssScale), rotation });
 
         const dpr = Math.min(window.devicePixelRatio || 1, 2.25);
+        const rawRenderW = cssViewport.width * dpr;
+        const rawRenderH = cssViewport.height * dpr;
+        const maxDim = 3600;
+        const safeScaleFactor =
+          Math.max(rawRenderW, rawRenderH) > maxDim
+            ? maxDim / Math.max(rawRenderW, rawRenderH)
+            : 1;
+
         const renderViewport = page.getViewport({
-          scale: Math.max(0.25, cssScale * dpr),
+          scale: Math.max(0.25, cssScale * dpr * safeScaleFactor),
           rotation,
         });
 

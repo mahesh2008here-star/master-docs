@@ -6,6 +6,7 @@ import {
   ReadingSession,
   AppSettings,
   VaultSecurityConfig,
+  ContributorEntry,
 } from './types/document';
 import {
   getAllDocuments,
@@ -19,6 +20,8 @@ import {
   getAppSettings,
   saveAppSettings,
   getVaultSecurityConfig,
+  getAllContributors,
+  saveContributor,
   seedDemoDocuments,
   DEFAULT_SETTINGS,
   getDB,
@@ -39,7 +42,12 @@ import {
   requestAllFilesStoragePermission,
   scanAllDeviceDocuments,
   loadScannedDeviceDocument,
+  hideDocumentInSystemStorage,
+  restoreDocumentFromVaultStorage,
+  deleteVaultSandboxCopy,
 } from './services/nativeStorageService';
+import { fetchApprovedContributorsFromServer } from './services/supportService';
+import { subscribeApprovedContributors } from './services/firebaseService';
 import { TopHeader } from './components/navigation/TopHeader';
 import { LiquidGlassDock } from './components/navigation/LiquidGlassDock';
 import { HomeScreen } from './screens/HomeScreen';
@@ -47,6 +55,7 @@ import { VaultScreen } from './screens/VaultScreen';
 import { FavouritesScreen } from './screens/FavouritesScreen';
 import { RecentScreen } from './screens/RecentScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
+import { SupportScreen, type SupportReviewParams } from './screens/SupportScreen';
 import { ReaderScreen } from './screens/ReaderScreen';
 import { SearchScreen } from './screens/SearchScreen';
 import { ConfirmModal } from './components/common/ConfirmModal';
@@ -63,6 +72,21 @@ export default function App() {
 
   const [vaultConfig, setVaultConfig] = useState<VaultSecurityConfig | null>(null);
   const [isVaultUnlocked, setIsVaultUnlocked] = useState<boolean>(false);
+  const [contributors, setContributors] = useState<ContributorEntry[]>([]);
+  const [reviewParams, setReviewParams] = useState<SupportReviewParams | null>(() => {
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      const id = sp.get('reviewContribution');
+      const action = sp.get('action');
+      const token = sp.get('token');
+      if (id && token && (action === 'approve' || action === 'reject')) {
+        return { id, action, token };
+      }
+    } catch {
+      // ignore
+    }
+    return null;
+  });
 
   const [storagePermissionGranted, setStoragePermissionGranted] = useState<boolean>(false);
   const [showPermissionModal, setShowPermissionModal] = useState<boolean>(false);
@@ -70,7 +94,17 @@ export default function App() {
   const [isScanningStorage, setIsScanningStorage] = useState<boolean>(false);
   const [openingDocId, setOpeningDocId] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<NavigationTab>('home');
+  const [activeTab, setActiveTab] = useState<NavigationTab>(() => {
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      if (sp.get('reviewContribution') && sp.get('token')) {
+        return 'support';
+      }
+    } catch {
+      // ignore
+    }
+    return 'home';
+  });
   const [selectedDoc, setSelectedDoc] = useState<DocumentItem | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
@@ -88,8 +122,22 @@ export default function App() {
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const importPrivateRef = useRef<boolean>(false);
+  const pendingPrivatePickerRef = useRef<{ active: boolean; timestamp: number }>({
+    active: false,
+    timestamp: 0,
+  });
   const pendingVaultDocRef = useRef<DocumentItem | null>(null);
+  const selectedDocRef = useRef<DocumentItem | null>(null);
+  const activeTabRef = useRef<NavigationTab>('home');
   const toastTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    selectedDocRef.current = selectedDoc;
+  }, [selectedDoc]);
+
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
 
   const notify = useCallback((type: 'success' | 'error' | 'info', message: string) => {
     if (toastTimerRef.current) {
@@ -144,22 +192,68 @@ export default function App() {
     [notify]
   );
 
-  // Initialize local DB, Vault config, and first-launch storage access check
+  const navigateToTab = useCallback((nextTab: NavigationTab) => {
+    // Immediately lock the Secure Vault whenever leaving the Vault tab
+    if (nextTab !== 'vault' && nextTab !== 'reader') {
+      setIsVaultUnlocked(false);
+      if (selectedDocRef.current?.isPrivate) {
+        setSelectedDoc(null);
+      }
+    }
+    setActiveTab(nextTab);
+  }, []);
+
+  const mergeAndCacheContributors = useCallback(async (incoming: ContributorEntry[]) => {
+    if (!incoming || incoming.length === 0) return;
+    for (const item of incoming) {
+      await saveContributor(item).catch(() => {});
+    }
+    setContributors((prev) => {
+      const byKey = new Map<string, ContributorEntry>();
+      for (const existing of prev) {
+        byKey.set(existing.utrHash || existing.id, existing);
+      }
+      for (const nextItem of incoming) {
+        byKey.set(nextItem.utrHash || nextItem.id, nextItem);
+      }
+      return Array.from(byKey.values()).sort(
+        (a, b) => new Date(b.verifiedAt).getTime() - new Date(a.verifiedAt).getTime()
+      );
+    });
+  }, []);
+
+  const refreshApprovedContributors = useCallback(async () => {
+    try {
+      const res = await fetchApprovedContributorsFromServer();
+      await mergeAndCacheContributors(res.contributors);
+    } catch {
+      // Offline / server unreachable; keep cached & Firestore contributors
+    }
+  }, [mergeAndCacheContributors]);
+
+  // Initialize local DB, Vault config, contributors, and first-launch storage access check
   useEffect(() => {
     async function initApp() {
       try {
-        const [loadedDocs, loadedSessions, loadedSettings, loadedVaultConfig] =
-          await Promise.all([
-            getAllDocuments(),
-            getRecentSessions(),
-            getAppSettings(),
-            getVaultSecurityConfig(),
-          ]);
+        const [
+          loadedDocs,
+          loadedSessions,
+          loadedSettings,
+          loadedVaultConfig,
+          loadedContributors,
+        ] = await Promise.all([
+          getAllDocuments(),
+          getRecentSessions(),
+          getAppSettings(),
+          getVaultSecurityConfig(),
+          getAllContributors(),
+        ]);
 
         setDocuments(loadedDocs);
         setRecentSessions(loadedSessions);
         setSettings(loadedSettings);
         setVaultConfig(loadedVaultConfig);
+        setContributors(loadedContributors);
         applyTheme(loadedSettings.themeMode);
         applyAccentColor(
           loadedSettings.customAccentColor || loadedSettings.accentColor || '#a92f2e'
@@ -176,27 +270,74 @@ export default function App() {
         if (!onboardingDone && !hasPermission) {
           setShowPermissionModal(true);
         }
+
+        void refreshApprovedContributors();
       } catch (err) {
         console.error('Failed to initialize Master Docs:', err);
         notify('error', 'Failed to initialize local document storage.');
       }
     }
     initApp();
-  }, [notify, refreshDeviceScan]);
+  }, [notify, refreshDeviceScan, refreshApprovedContributors]);
 
-  // Auto-lock Secure Vault on background & re-check All Files Permission on foreground resume
+  // Live Firestore listener for globally approved contributors
   useEffect(() => {
-    const handleVisibility = () => {
-      if (document.visibilityState === 'hidden') {
-        setIsVaultUnlocked(false);
+    const unsubscribe = subscribeApprovedContributors(
+      (items) => {
+        void mergeAndCacheContributors(items);
+      },
+      (err) => {
+        console.warn('Firestore approved contributors listener notice:', err.message);
+      }
+    );
+    return () => unsubscribe();
+  }, [mergeAndCacheContributors]);
+
+  // Immediately lock Secure Vault on app background, tab close, or window hide
+  useEffect(() => {
+    const lockVaultOnLeave = (forceClose = false) => {
+      const pickerWindowValid =
+        !forceClose &&
+        pendingPrivatePickerRef.current.active &&
+        Date.now() - pendingPrivatePickerRef.current.timestamp < 45000;
+
+      if (pickerWindowValid) {
+        // Android opens native file chooser as a separate Activity; preserve private import intent until it returns
+        return;
+      }
+
+      setIsVaultUnlocked(false);
+      if (selectedDocRef.current?.isPrivate) {
+        setSelectedDoc(null);
+        if (activeTabRef.current === 'reader') {
+          setActiveTab('vault');
+        }
       }
     };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        lockVaultOnLeave(false);
+      }
+    };
+    const handlePageHide = () => lockVaultOnLeave(true);
+    const handleBeforeUnload = () => lockVaultOnLeave(true);
+
     document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('beforeunload', handleBeforeUnload);
 
     const appListener = CapApp.addListener('appStateChange', async ({ isActive }) => {
       if (!isActive) {
-        setIsVaultUnlocked(false);
+        lockVaultOnLeave(false);
         return;
+      }
+
+      if (pendingPrivatePickerRef.current.active) {
+        // Clear grace flag shortly after resuming in case user cancelled file picker
+        window.setTimeout(() => {
+          pendingPrivatePickerRef.current.active = false;
+        }, 700);
       }
 
       const granted = await checkAllFilesStoragePermission();
@@ -212,6 +353,8 @@ export default function App() {
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       appListener.then((h) => h.remove());
     };
   }, [refreshDeviceScan]);
@@ -220,10 +363,13 @@ export default function App() {
   useEffect(() => {
     const listener = CapApp.addListener('backButton', () => {
       if (activeTab === 'reader') {
-        setActiveTab(selectedDoc?.isPrivate ? 'vault' : 'home');
+        const wasPrivate = Boolean(selectedDoc?.isPrivate);
         setSelectedDoc(null);
+        navigateToTab(wasPrivate ? 'vault' : 'home');
+      } else if (activeTab === 'support') {
+        navigateToTab('settings');
       } else if (activeTab !== 'home') {
-        setActiveTab('home');
+        navigateToTab('home');
       } else {
         CapApp.minimizeApp();
       }
@@ -232,7 +378,7 @@ export default function App() {
     return () => {
       listener.then((h) => h.remove());
     };
-  }, [activeTab, selectedDoc?.isPrivate]);
+  }, [activeTab, selectedDoc?.isPrivate, navigateToTab]);
 
   // Separate public library (merged with scanned Android device files) vs hidden private vault
   const privateDocuments = useMemo(
@@ -243,7 +389,9 @@ export default function App() {
   const publicDocuments = useMemo(() => {
     const dbPublic = documents.filter((d) => !d.isPrivate);
     const knownDevicePaths = new Set(
-      documents.map((d) => d.devicePath).filter((p): p is string => Boolean(p))
+      documents
+        .flatMap((d) => [d.devicePath, d.originalDevicePath])
+        .filter((p): p is string => Boolean(p))
     );
     const knownSignatures = new Set(
       documents.map((d) => `${d.name.toLowerCase()}::${d.size}`)
@@ -337,6 +485,13 @@ export default function App() {
       arrayBuffer: rawBuffer,
       content: searchableContent,
     };
+
+    if (isPrivate) {
+      const hideRes = await hideDocumentInSystemStorage(newDoc);
+      if (hideRes.vaultFilePath) {
+        newDoc.vaultFilePath = hideRes.vaultFilePath;
+      }
+    }
 
     await saveDocument(newDoc);
     return newDoc;
@@ -449,6 +604,7 @@ export default function App() {
   const moveDocumentIntoVault = async (doc: DocumentItem) => {
     if (!vaultConfig) {
       pendingVaultDocRef.current = doc;
+      setIsVaultUnlocked(false);
       setActiveTab('vault');
       notify('info', 'Set up a Vault PIN or Password first to hide private documents.');
       return;
@@ -459,15 +615,28 @@ export default function App() {
       prepared = await loadScannedDeviceDocument(doc);
     }
 
+    const hideRes = await hideDocumentInSystemStorage(prepared);
+    const vaultMeta: Partial<DocumentItem> = {
+      originalDevicePath:
+        hideRes.originalDevicePath || prepared.originalDevicePath || prepared.devicePath,
+      vaultFilePath: hideRes.vaultFilePath || prepared.vaultFilePath,
+      devicePath: undefined,
+    };
+
     const existsInDb = documents.some((d) => d.id === prepared.id);
     if (existsInDb) {
-      await setDocumentPrivate(prepared.id, true);
+      await setDocumentPrivate(prepared.id, true, vaultMeta);
     } else {
       await saveDocument({
         ...prepared,
+        ...vaultMeta,
         isPrivate: true,
         isFavorite: false,
       });
+    }
+
+    if (doc.devicePath) {
+      setScannedDeviceDocs((prev) => prev.filter((s) => s.devicePath !== doc.devicePath));
     }
 
     const [updatedDocs, updatedSessions] = await Promise.all([
@@ -476,21 +645,48 @@ export default function App() {
     ]);
     setDocuments(updatedDocs);
     setRecentSessions(updatedSessions);
-    notify('success', `"${doc.name}" locked inside Secure Vault.`);
+    notify(
+      'success',
+      hideRes.deletedOriginal
+        ? `"${doc.name}" hidden from internal storage & locked in Secure Vault.`
+        : `"${doc.name}" locked inside Secure Vault.`
+    );
   };
 
   const handleRemoveFromVault = async (id: string) => {
     const target = documents.find((d) => d.id === id);
-    await setDocumentPrivate(id, false);
+    let restoredOnDisk = false;
+    if (target) {
+      restoredOnDisk = await restoreDocumentFromVaultStorage(target);
+    }
+    await setDocumentPrivate(id, false, {
+      vaultFilePath: undefined,
+      devicePath: restoredOnDisk && target?.originalDevicePath ? target.originalDevicePath : undefined,
+      originalDevicePath: undefined,
+    });
     setDocuments(await getAllDocuments());
-    notify('info', `"${target?.name || 'Document'}" moved back to Home.`);
+    if (restoredOnDisk && isNativeAndroid()) {
+      refreshDeviceScan(true);
+    }
+    notify(
+      'info',
+      restoredOnDisk
+        ? `"${target?.name || 'Document'}" restored to internal storage & moved to Home.`
+        : `"${target?.name || 'Document'}" moved back to Home.`
+    );
   };
 
   const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || files.length === 0) return;
+    pendingPrivatePickerRef.current.active = false;
+    if (!files || files.length === 0) {
+      importPrivateRef.current = false;
+      return;
+    }
 
-    const targetPrivate = importPrivateRef.current && Boolean(vaultConfig) && isVaultUnlocked;
+    const targetPrivate = importPrivateRef.current && Boolean(vaultConfig);
+    importPrivateRef.current = false;
+
     const importedDocs: DocumentItem[] = [];
     let failCount = 0;
 
@@ -513,7 +709,7 @@ export default function App() {
         notify(
           'success',
           targetPrivate
-            ? `Locked ${importedDocs.length} private document(s) in Secure Vault.`
+            ? `Hidden ${importedDocs.length} private document(s) inside Secure Vault.`
             : `Imported ${importedDocs.length} document(s) onto Home.`
         );
       }
@@ -525,7 +721,12 @@ export default function App() {
   };
 
   const triggerFilePicker = (asPrivate = false) => {
-    importPrivateRef.current = asPrivate;
+    const allowPrivate = asPrivate && Boolean(vaultConfig) && isVaultUnlocked;
+    importPrivateRef.current = allowPrivate;
+    pendingPrivatePickerRef.current = {
+      active: allowPrivate,
+      timestamp: Date.now(),
+    };
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
       fileInputRef.current.click();
@@ -540,6 +741,9 @@ export default function App() {
       title: 'Delete Local Document',
       message: `Remove "${docToDelete?.name || 'this file'}" from app storage?`,
       action: async () => {
+        if (docToDelete) {
+          await deleteVaultSandboxCopy(docToDelete);
+        }
         await deleteDocument(id);
         setDocuments((prev) => prev.filter((d) => d.id !== id));
         setRecentSessions((prev) => prev.filter((s) => s.documentId !== id));
@@ -570,6 +774,11 @@ export default function App() {
       message:
         'This will permanently delete all imported & Vault documents and reading history from this app.',
       action: async () => {
+        for (const d of documents) {
+          if (d.vaultFilePath) {
+            await deleteVaultSandboxCopy(d);
+          }
+        }
         const db = await getDB();
         await db.clear('documents');
         await db.clear('recents');
@@ -662,7 +871,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fff9e7] dark:bg-[#181711] text-[#1d1c11] dark:text-[#f6f1de] flex flex-col font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-[#fff9e7] dark:bg-[#1d1c11] text-[#1d1c11] dark:text-[#f6f1de] flex flex-col font-sans overflow-x-hidden">
       <input
         type="file"
         ref={fileInputRef}
@@ -676,19 +885,22 @@ export default function App() {
       <TopHeader
         activeTab={activeTab}
         subtitle={activeTab === 'reader' ? selectedDoc?.name : undefined}
-        onOpenSearch={() => setActiveTab('search')}
+        onOpenSearch={() => navigateToTab('search')}
         onBack={() => {
           if (activeTab === 'reader') {
-            setActiveTab(selectedDoc?.isPrivate ? 'vault' : 'home');
+            const wasPrivate = Boolean(selectedDoc?.isPrivate);
             setSelectedDoc(null);
+            navigateToTab(wasPrivate ? 'vault' : 'home');
+          } else if (activeTab === 'support') {
+            navigateToTab('settings');
           } else {
-            setActiveTab('home');
+            navigateToTab('home');
           }
         }}
-        onOpenSettings={() => setActiveTab('settings')}
+        onOpenSettings={() => navigateToTab('settings')}
       />
 
-      <main className="flex-1 w-full max-w-4xl mx-auto px-3 sm:px-4 pt-3 sm:pt-4 min-w-0">
+      <main className="flex-1 w-full max-w-2xl mx-auto px-3 sm:px-4 pt-4 min-w-0">
         {activeTab === 'home' && (
           <HomeScreen
             documents={publicDocuments}
@@ -706,7 +918,7 @@ export default function App() {
               moveDocumentIntoVault(doc);
             }}
             onDeleteDocument={handleDeleteDocument}
-            onOpenVaultTab={() => setActiveTab('vault')}
+            onOpenVaultTab={() => navigateToTab('vault')}
           />
         )}
 
@@ -730,15 +942,32 @@ export default function App() {
                 ) {
                   prepared = await loadScannedDeviceDocument(pendingDoc);
                 }
+                const hideRes = await hideDocumentInSystemStorage(prepared);
+                const vaultMeta: Partial<DocumentItem> = {
+                  originalDevicePath:
+                    hideRes.originalDevicePath || prepared.originalDevicePath || prepared.devicePath,
+                  vaultFilePath: hideRes.vaultFilePath || prepared.vaultFilePath,
+                  devicePath: undefined,
+                };
                 const existsInDb = documents.some((d) => d.id === prepared.id);
                 if (existsInDb) {
-                  await setDocumentPrivate(prepared.id, true);
+                  await setDocumentPrivate(prepared.id, true, vaultMeta);
                 } else {
-                  await saveDocument({ ...prepared, isPrivate: true, isFavorite: false });
+                  await saveDocument({
+                    ...prepared,
+                    ...vaultMeta,
+                    isPrivate: true,
+                    isFavorite: false,
+                  });
+                }
+                if (pendingDoc.devicePath) {
+                  setScannedDeviceDocs((prev) =>
+                    prev.filter((s) => s.devicePath !== pendingDoc.devicePath)
+                  );
                 }
                 setDocuments(await getAllDocuments());
                 setRecentSessions(await getRecentSessions());
-                notify('success', `"${pendingDoc.name}" moved into Secure Vault.`);
+                notify('success', `"${pendingDoc.name}" hidden & locked inside Secure Vault.`);
               }
             }}
             onUnlock={() => setIsVaultUnlocked(true)}
@@ -776,7 +1005,9 @@ export default function App() {
         {activeTab === 'settings' && (
           <SettingsScreen
             settings={settings}
+            contributorsCount={contributors.length}
             onUpdateSettings={handleUpdateSettings}
+            onOpenSupport={() => navigateToTab('support')}
             onClearAllDocuments={handleClearAllDocuments}
             onClearHistory={handleClearHistory}
             onExportBackup={handleExportBackup}
@@ -785,11 +1016,36 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'support' && (
+          <SupportScreen
+            contributors={contributors}
+            reviewParams={reviewParams}
+            onClearReviewParams={() => {
+              setReviewParams(null);
+              try {
+                const url = new URL(window.location.href);
+                url.searchParams.delete('reviewContribution');
+                url.searchParams.delete('action');
+                url.searchParams.delete('token');
+                window.history.replaceState({}, '', url.toString());
+              } catch {
+                // ignore
+              }
+            }}
+            onContributorApproved={(entry) => {
+              void mergeAndCacheContributors([entry]);
+            }}
+            onRefreshContributors={refreshApprovedContributors}
+            onBack={() => navigateToTab('settings')}
+            onNotify={notify}
+          />
+        )}
+
         {activeTab === 'search' && (
           <SearchScreen
             documents={publicDocuments}
             onOpenDocument={handleOpenDocument}
-            onBack={() => setActiveTab('home')}
+            onBack={() => navigateToTab('home')}
           />
         )}
 
@@ -798,8 +1054,9 @@ export default function App() {
             document={selectedDoc}
             settings={settings}
             onBack={() => {
-              setActiveTab(selectedDoc.isPrivate ? 'vault' : 'home');
+              const wasPrivate = Boolean(selectedDoc.isPrivate);
               setSelectedDoc(null);
+              navigateToTab(wasPrivate ? 'vault' : 'home');
             }}
             onUpdatePage={async (page, totalPages) => {
               if (!selectedDoc.devicePath) {
@@ -814,7 +1071,7 @@ export default function App() {
         )}
       </main>
 
-      <LiquidGlassDock activeTab={activeTab} onSelectTab={setActiveTab} />
+      <LiquidGlassDock activeTab={activeTab} onSelectTab={navigateToTab} />
 
       <StoragePermissionModal
         isOpen={showPermissionModal}

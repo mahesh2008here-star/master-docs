@@ -1,0 +1,203 @@
+{
+  "entities": {
+    "Contributor": {
+      "title": "Approved Contributor",
+      "description": "Publicly visible verified supporter added only after admin approval by maheshm81622@gmail.com.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique contributor document ID matching pattern ^[a-zA-Z0-9_\\-]+$."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 40,
+          "description": "Display name shown in the Verified Contributors wall."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Approved INR contribution amount (minimum 50)."
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Optional supporter appreciation note."
+        },
+        "thankYouNote": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "Thank you note added by admin upon approving payment."
+        },
+        "utrMasked": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 24,
+          "description": "Masked last-4 digits of the verified UPI UTR reference."
+        },
+        "utrHash": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "description": "SHA-256 hash of normalized UTR to prevent duplicate claims."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["approved"],
+          "description": "Approval state; only approved contributors appear publicly."
+        },
+        "approvedByUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Firebase Auth UID of the admin who approved this contributor."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when approved entry was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when approved entry was last updated."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "amount",
+        "thankYouNote",
+        "utrMasked",
+        "utrHash",
+        "status",
+        "approvedByUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ContributionRequest": {
+      "title": "Pending Contribution Verification Request",
+      "description": "Payment claim submitted by a user after UPI/QR payment awaiting approval or rejection by maheshm81622@gmail.com.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Unique request ID."
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "UID of the authenticated user who submitted the claim."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 40,
+          "description": "Contributor display name."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Claimed INR amount (minimum 50)."
+        },
+        "utr": {
+          "type": "string",
+          "minLength": 12,
+          "maxLength": 24,
+          "pattern": "^[A-Z0-9]+$",
+          "description": "Normalized NPCI 12-digit UPI UTR reference submitted for verification."
+        },
+        "utrMasked": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 24,
+          "description": "Masked last-4 digits of the UTR."
+        },
+        "utrHash": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "description": "SHA-256 hash of normalized UTR."
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Optional note from the contributor."
+        },
+        "thankYouNote": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Admin thank you note set when approved."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "approved", "rejected"],
+          "description": "Review status of the payment claim."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp on creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp on last status update."
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "name",
+        "amount",
+        "utr",
+        "utrMasked",
+        "utrHash",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AdminUser": {
+      "title": "Admin Role Record",
+      "description": "Explicit Firestore admin allowlist document.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Admin Firebase Auth UID."
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Admin email address."
+        }
+      },
+      "required": ["uid", "email"]
+    }
+  },
+  "firestore": {
+    "/contributors/{contributorId}": {
+      "schema": { "$ref": "#/entities/Contributor" },
+      "description": "Public approved contributors list visible in SupportScreen (no PII)."
+    },
+    "/contribution_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/ContributionRequest" },
+      "description": "Pending and reviewed payment requests accessible only by the submitter or verified admin."
+    },
+    "/admins/{adminUid}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Admin authorization lookup documents."
+    }
+  }
+}

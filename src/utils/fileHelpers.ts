@@ -75,10 +75,10 @@ export async function detectDocumentFormat(
   filename: string
 ): Promise<{ type: DocumentType; extension: string }> {
   const originalExt = getFileExtension(filename);
-  const headerAscii = new TextDecoder('latin1').decode(bytes.subarray(0, 64));
+  const headerAscii = new TextDecoder('latin1').decode(bytes.subarray(0, 1024));
   const trimmedHeader = headerAscii.trimStart();
 
-  // 1. PDF signature (%PDF-)
+  // 1. PDF signature (%PDF- allowed within first 1024 bytes per ISO 32000)
   if (bytes.length >= 5 && headerAscii.includes('%PDF-')) {
     return { type: 'pdf', extension: 'pdf' };
   }

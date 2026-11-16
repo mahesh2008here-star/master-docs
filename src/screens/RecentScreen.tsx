@@ -28,13 +28,13 @@ export const RecentScreen: React.FC<RecentScreenProps> = ({
     >
       <div className="flex items-center justify-between px-1 min-w-0">
         <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#ede8d6] dark:bg-[#3d3a30] retro-border-sm font-heading font-bold text-[11px] text-[#1d1c11] dark:text-[#f6f1de] uppercase tracking-wider retro-shadow-sm">
-          READING HISTORY
+          RECENT HISTORY
         </span>
         {sessions.length > 0 && (
           <button
             onClick={onClearHistory}
             style={{ color: 'var(--primary-red)' }}
-            className="font-heading font-bold text-xs hover:underline cursor-pointer shrink-0"
+            className="font-heading font-bold text-xs uppercase tracking-wider hover:underline cursor-pointer shrink-0"
           >
             CLEAR HISTORY
           </button>
@@ -43,12 +43,12 @@ export const RecentScreen: React.FC<RecentScreenProps> = ({
 
       {sessions.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-8 text-center bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl retro-border retro-shadow">
-          <Clock className="w-12 h-12 text-[#58413f] dark:text-[#c8bead] mb-2" />
+          <Clock className="w-10 h-10 text-[#58413f] dark:text-[#c8bead] mb-2" />
           <h3 className="font-heading font-bold text-base text-[#1d1c11] dark:text-[#f6f1de] mb-1">
             No Recent Reading Sessions
           </h3>
-          <p className="font-sans text-xs text-[#58413f] dark:text-[#c8bead]">
-            Open any document from your library to keep track of your reading progress and history.
+          <p className="font-sans text-xs text-[#58413f] dark:text-[#c8bead] max-w-xs">
+            Open any document from your library to keep track of your reading progress and resume where you left off.
           </p>
         </div>
       ) : (
@@ -78,8 +78,9 @@ export const RecentScreen: React.FC<RecentScreenProps> = ({
                     <span className="block font-heading font-bold text-xs sm:text-sm text-[#1d1c11] dark:text-[#f6f1de] truncate">
                       {session.documentName}
                     </span>
-                    <p className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] truncate">
-                      Page {session.currentPage} of {session.totalPages} • {session.progressPercent}% read • {formatDateLabel(session.lastOpenedAt)}
+                    <p className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] truncate tabular-nums">
+                      Page {session.currentPage} of {session.totalPages} • {session.progressPercent}% •{' '}
+                      {formatDateLabel(session.lastOpenedAt)}
                     </p>
                   </div>
                 </div>
@@ -91,10 +92,10 @@ export const RecentScreen: React.FC<RecentScreenProps> = ({
                     if (targetDoc) onOpenDocument(targetDoc);
                   }}
                   style={{ backgroundColor: 'var(--primary-red)' }}
-                  className="h-9 px-3 rounded-xl text-white font-heading font-bold text-xs uppercase tracking-wider retro-border-sm retro-shadow-sm flex items-center gap-1 cursor-pointer shrink-0 transition-colors"
+                  className="h-9 px-3 rounded-xl text-white font-heading font-bold text-xs uppercase tracking-wider retro-border-sm retro-shadow-sm flex items-center gap-1 cursor-pointer shrink-0"
                 >
+                  <Play className="w-3 h-3 fill-current shrink-0" />
                   <span>RESUME</span>
-                  <Play className="w-3.5 h-3.5 fill-current shrink-0" />
                 </motion.button>
               </motion.div>
             );
