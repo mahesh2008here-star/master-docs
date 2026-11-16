@@ -71,11 +71,13 @@ This repository includes an automated GitHub Actions workflow (`.github/workflow
 To sign the release APK automatically during GitHub Actions builds, set the following **GitHub Secrets** in your repository (`Settings > Secrets and variables > Actions`):
 
 - `ANDROID_KEYSTORE_BASE64`: Base64-encoded string of your `.jks` or `.keystore` file.
-- `ANDROID_KEYSTORE_PASSWORD`: Keystore password.
+- `ANDROID_KEYSTORE_PASSWORD`: Keystore pass
+- word.
 - `ANDROID_KEY_ALIAS`: Key alias name.
 - `ANDROID_KEY_PASSWORD`: Key password.
 
 *If signing secrets are not configured, the GitHub Actions workflow produces a functional unsigned release APK.*
+
 
 ---
 
@@ -89,4 +91,5 @@ To sign the release APK automatically during GitHub Actions builds, set the foll
 ---
 
 ## 📜 License
-Apache-2.0 License. Built for offline document privacy.
+Apache-2.0 License. Built for offline document priva
+![image alt](https://github.com/mahesh2008here-star/master-docs/blob/ae199cbac90878395bd3a3650b36702d4d6624cf/Screenshot_20261116-143629_MASTER%20DOCS.png)
