@@ -1,6 +1,10 @@
+import { Capacitor } from '@capacitor/core';
 import { Filesystem } from '@capacitor/filesystem';
 
 export async function requestAndroidStoragePermissions(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) {
+    return true;
+  }
   try {
     const status = await Filesystem.checkPermissions();
     if (status.publicStorage !== 'granted') {
@@ -9,7 +13,7 @@ export async function requestAndroidStoragePermissions(): Promise<boolean> {
     }
     return true;
   } catch (error) {
-    console.warn('Storage permission request handled on web/browser platform:', error);
+    console.warn('Storage permission check skipped:', error);
     return true;
   }
 }

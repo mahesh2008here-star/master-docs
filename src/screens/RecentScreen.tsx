@@ -86,7 +86,8 @@ export const RecentScreen: React.FC<RecentScreenProps> = ({
 
                 <motion.button
                   whileTap={{ scale: 0.92 }}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     if (targetDoc) onOpenDocument(targetDoc);
                   }}
                   style={{ backgroundColor: 'var(--primary-red)' }}

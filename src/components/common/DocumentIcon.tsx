@@ -1,11 +1,12 @@
 import React from 'react';
-import { 
-  FileText, 
-  FileSpreadsheet, 
-  Presentation, 
-  FileCode, 
-  File, 
-  BookOpen 
+import {
+  FileText,
+  FileSpreadsheet,
+  Presentation,
+  FileCode,
+  File,
+  BookOpen,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { DocumentType } from '../../types/document';
 import { AnimatedIcon } from './AnimatedIcon';
@@ -16,10 +17,10 @@ interface DocumentIconProps {
   animate?: boolean;
 }
 
-export const DocumentIcon: React.FC<DocumentIconProps> = ({ 
-  typeKey, 
-  className = "w-5 h-5",
-  animate = true
+export const DocumentIcon: React.FC<DocumentIconProps> = ({
+  typeKey,
+  className = 'w-5 h-5',
+  animate = true,
 }) => {
   const getIconAndGlow = () => {
     switch (typeKey) {
@@ -34,6 +35,8 @@ export const DocumentIcon: React.FC<DocumentIconProps> = ({
       case 'markdown':
       case 'text':
         return { icon: FileCode, glow: '#8A65C9' };
+      case 'image':
+        return { icon: ImageIcon, glow: '#2E8B8B' };
       default:
         return { icon: File, glow: '#605C48' };
     }
@@ -46,12 +49,5 @@ export const DocumentIcon: React.FC<DocumentIconProps> = ({
     return <IconComponent className={className} />;
   }
 
-  return (
-    <AnimatedIcon 
-      icon={icon} 
-      className={className} 
-      animateOnHover 
-      glowColor={glow}
-    />
-  );
+  return <AnimatedIcon icon={icon} className={className} animateOnHover glowColor={glow} />;
 };

@@ -1,20 +1,19 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Search, 
-  X, 
-  SlidersHorizontal, 
-  FolderOpen, 
-  ArrowUpDown, 
-  List, 
-  Grid, 
-  Lock, 
-  Star, 
-  MoreVertical, 
-  Eye, 
-  Trash2, 
-  PlusCircle, 
-  ShieldCheck 
+import {
+  Search,
+  X,
+  SlidersHorizontal,
+  FolderOpen,
+  ArrowUpDown,
+  List,
+  Grid,
+  Star,
+  MoreVertical,
+  Eye,
+  Trash2,
+  PlusCircle,
+  ShieldCheck,
 } from 'lucide-react';
 import { DocumentItem, DocumentType } from '../types/document';
 import { getTypeBadgeConfig, formatFileSize, formatDateLabel } from '../utils/fileHelpers';
@@ -45,6 +44,11 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [selectedDocForMenu, setSelectedDocForMenu] = useState<string | null>(null);
 
+  const totalVaultSize = useMemo(
+    () => documents.reduce((sum, d) => sum + (d.size || 0), 0),
+    [documents]
+  );
+
   // Category counters
   const categoryCounts = useMemo(() => {
     return {
@@ -53,7 +57,9 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
       word: documents.filter((d) => d.type === 'word').length,
       excel: documents.filter((d) => d.type === 'excel').length,
       powerpoint: documents.filter((d) => d.type === 'powerpoint').length,
-      text: documents.filter((d) => d.type === 'text' || d.type === 'markdown').length,
+      text: documents.filter(
+        (d) => d.type === 'text' || d.type === 'markdown' || d.type === 'image'
+      ).length,
     };
   }, [documents]);
 
@@ -63,7 +69,9 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
       .filter((doc) => {
         if (selectedCategory !== 'all') {
           if (selectedCategory === 'text') {
-            if (doc.type !== 'text' && doc.type !== 'markdown') return false;
+            if (doc.type !== 'text' && doc.type !== 'markdown' && doc.type !== 'image') {
+              return false;
+            }
           } else if (doc.type !== selectedCategory) {
             return false;
           }
@@ -107,6 +115,9 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.2 }}
       className="flex flex-col w-full space-y-4 pb-28 min-w-0"
+      onClick={() => {
+        if (selectedDocForMenu) setSelectedDocForMenu(null);
+      }}
     >
       {/* Search Bar Input */}
       <div className="relative w-full">
@@ -130,7 +141,7 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
             <motion.button
               whileTap={{ scale: 0.88 }}
               onClick={toggleSort}
-              title="Filter & Sort"
+              title="Cycle Sort Order"
               className="w-8 h-8 rounded-lg bg-[#f3eedc] dark:bg-[#333128] retro-border-sm flex items-center justify-center text-[#1d1c11] dark:text-[#f6f1de] retro-shadow-sm cursor-pointer shrink-0"
             >
               <SlidersHorizontal className="w-4 h-4" />
@@ -147,14 +158,14 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
           { id: 'word', label: `WORD (${categoryCounts.word})` },
           { id: 'excel', label: `EXCEL (${categoryCounts.excel})` },
           { id: 'powerpoint', label: `SLIDES (${categoryCounts.powerpoint})` },
-          { id: 'text', label: `TEXT (${categoryCounts.text})` },
+          { id: 'text', label: `TEXT & OTHER (${categoryCounts.text})` },
         ].map((cat) => {
           const isSelected = selectedCategory === cat.id;
           return (
             <motion.button
               key={cat.id}
               whileTap={{ scale: 0.92 }}
-              onClick={() => onSelectCategory(cat.id as any)}
+              onClick={() => onSelectCategory(cat.id as DocumentType | 'all')}
               style={{
                 backgroundColor: isSelected ? 'var(--primary-red)' : undefined,
               }}
@@ -170,10 +181,10 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
         })}
       </div>
 
-      {/* Directory Storage Status Banner */}
+      {/* Local Vault Storage Banner */}
       <div className="flex flex-col space-y-2 min-w-0">
         <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#ede8d6] dark:bg-[#3d3a30] retro-border-sm font-heading font-bold text-[11px] text-[#1d1c11] dark:text-[#f6f1de] uppercase tracking-wider retro-shadow-sm self-start">
-          DIRECTORY
+          LOCAL VAULT
         </span>
 
         <div className="p-3.5 rounded-2xl bg-[#f9f4e1] dark:bg-[#2b2921] retro-border retro-shadow flex flex-col gap-2">
@@ -184,10 +195,10 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
               </div>
               <div className="min-w-0 flex-1">
                 <p className="font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de] truncate">
-                  Internal Storage &gt; Documents &gt; Vault
+                  On-Device Document Vault
                 </p>
                 <p className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] truncate">
-                  Synchronized on-device
+                  Stored locally in IndexedDB • Offline ready
                 </p>
               </div>
             </div>
@@ -203,10 +214,12 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
 
           <div className="pt-2 border-t border-black/10 dark:border-white/10 flex items-center justify-between font-sans text-[11px] text-[#58413f] dark:text-[#c8bead]">
             <span className="flex items-center gap-1.5 truncate">
-              <span className="w-2 h-2 rounded-full bg-[#249B65] border border-[#171717] animate-pulse shrink-0"></span>
-              {filteredDocs.length} FILES • OFFLINE
+              <span className="w-2 h-2 rounded-full bg-[#249B65] border border-[#171717] shrink-0"></span>
+              {filteredDocs.length} FILES SHOWN
             </span>
-            <span className="font-bold text-[#1d1c11] dark:text-[#f6f1de] shrink-0">64 GB free</span>
+            <span className="font-bold text-[#1d1c11] dark:text-[#f6f1de] shrink-0">
+              {formatFileSize(totalVaultSize)} used
+            </span>
           </div>
         </div>
       </div>
@@ -219,12 +232,16 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
           className="h-9 px-3 rounded-xl bg-white dark:bg-[#212019] retro-border-sm text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-xs uppercase tracking-wider retro-shadow-sm flex items-center gap-1.5 cursor-pointer shrink-0"
         >
           <ArrowUpDown className="w-3.5 h-3.5" />
-          <span>{sortBy === 'date' ? 'DATE' : sortBy === 'name' ? 'NAME' : 'SIZE'} {sortOrder === 'asc' ? '↑' : '↓'}</span>
+          <span>
+            {sortBy === 'date' ? 'DATE' : sortBy === 'name' ? 'NAME' : 'SIZE'}{' '}
+            {sortOrder === 'asc' ? '↑' : '↓'}
+          </span>
         </motion.button>
 
         <div className="flex items-center bg-[#f3eedc] dark:bg-[#333128] rounded-xl p-1 retro-border-sm retro-shadow-sm shrink-0">
           <button
             onClick={() => setViewMode('list')}
+            aria-label="List view"
             className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
               viewMode === 'list'
                 ? 'bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm retro-shadow-sm'
@@ -235,6 +252,7 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
           </button>
           <button
             onClick={() => setViewMode('grid')}
+            aria-label="Grid view"
             className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
               viewMode === 'grid'
                 ? 'bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm retro-shadow-sm'
@@ -254,7 +272,7 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
             No Documents Found
           </h3>
           <p className="font-sans text-xs text-[#58413f] dark:text-[#c8bead] mb-4">
-            Import local files to your offline vault to start reading.
+            Import any local file from device storage to read offline.
           </p>
           <motion.button
             whileTap={{ scale: 0.92 }}
@@ -279,17 +297,10 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
                 className="relative p-3.5 rounded-2xl bg-[#f9f4e1] dark:bg-[#2b2921] retro-border retro-shadow flex items-center justify-between gap-2.5 hover:bg-[#f3eedc] dark:hover:bg-[#333128] transition-colors cursor-pointer min-w-0"
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="relative shrink-0">
-                    <div
-                      className={`w-10 h-10 rounded-xl ${badge.bgColor} retro-border-sm flex items-center justify-center text-white retro-shadow-sm`}
-                    >
-                      <DocumentIcon typeKey={badge.typeKey} className="w-5 h-5" />
-                    </div>
-                    {doc.isLocked && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#171717] text-white flex items-center justify-center text-[10px]">
-                        <Lock className="w-2.5 h-2.5" />
-                      </span>
-                    )}
+                  <div
+                    className={`w-10 h-10 rounded-xl ${badge.bgColor} retro-border-sm flex items-center justify-center text-white retro-shadow-sm shrink-0`}
+                  >
+                    <DocumentIcon typeKey={badge.typeKey} className="w-5 h-5" />
                   </div>
 
                   <div className="min-w-0 flex-1">
@@ -297,11 +308,9 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
                       {doc.name}
                     </span>
                     <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-                      {doc.isLocked && (
-                        <span className="px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-200 border border-amber-900/40 font-heading font-bold text-[9px] uppercase shrink-0">
-                          LOCKED
-                        </span>
-                      )}
+                      <span className="px-1.5 py-0.2 rounded bg-[#e7e2d1] dark:bg-[#474439] retro-border-sm font-sans text-[9px] font-bold uppercase shrink-0">
+                        {badge.label}
+                      </span>
                       <span className="font-sans text-[10px] sm:text-[11px] text-[#58413f] dark:text-[#c8bead] truncate">
                         {formatFileSize(doc.size)} • {formatDateLabel(doc.modifiedAt)}
                       </span>
@@ -372,7 +381,7 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
                         className="flex items-center gap-2 px-3 py-2 text-xs font-heading font-bold hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg text-left cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />
-                        <span>Delete Reference</span>
+                        <span>Delete File</span>
                       </button>
                     </motion.div>
                   )}
@@ -402,6 +411,7 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
 
                   <button
                     onClick={(e) => onToggleFavorite(doc.id, e)}
+                    aria-label="Toggle favorite"
                     className="w-7 h-7 rounded-lg bg-white dark:bg-[#212019] retro-border-sm flex items-center justify-center text-[#58413f] dark:text-[#c8bead] cursor-pointer shrink-0"
                   >
                     <Star className={`w-3.5 h-3.5 ${doc.isFavorite ? 'fill-current text-[#D88B32]' : ''}`} />
@@ -409,11 +419,11 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
                 </div>
 
                 <div className="min-w-0">
-                  <span className="block font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de] line-clamp-2 leading-tight truncate">
+                  <span className="block font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de] leading-tight truncate">
                     {doc.name}
                   </span>
                   <span className="font-sans text-[10px] text-[#58413f] dark:text-[#c8bead] mt-1 block truncate">
-                    {formatFileSize(doc.size)}
+                    {formatFileSize(doc.size)} • {badge.label}
                   </span>
                 </div>
               </motion.div>
@@ -436,7 +446,7 @@ export const FilesScreen: React.FC<FilesScreenProps> = ({
         </motion.button>
         <p className="text-center font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] mt-2 flex items-center justify-center gap-1 truncate">
           <ShieldCheck className="w-3.5 h-3.5 text-[#249B65] shrink-0" />
-          <span>Offline First: Files stay encrypted locally on device</span>
+          <span>Offline First: Files stay locally on your device</span>
         </p>
       </div>
     </motion.div>

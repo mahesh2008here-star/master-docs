@@ -1,18 +1,18 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { 
-  PlusCircle, 
-  FolderOpen, 
-  BookOpen, 
-  Play, 
-  ChevronRight, 
-  Star, 
-  MoreVertical, 
+import {
+  PlusCircle,
+  FolderOpen,
+  BookOpen,
+  Play,
+  ChevronRight,
+  Star,
   HardDrive,
   FileText,
   FileSpreadsheet,
   Presentation,
-  FileCode
+  FileCode,
+  Clock,
 } from 'lucide-react';
 import { DocumentItem, ReadingSession, DocumentType } from '../types/document';
 import { getTypeBadgeConfig, formatFileSize, formatDateLabel } from '../utils/fileHelpers';
@@ -41,8 +41,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const wordCount = documents.filter((d) => d.type === 'word').length;
   const excelCount = documents.filter((d) => d.type === 'excel').length;
   const slidesCount = documents.filter((d) => d.type === 'powerpoint').length;
-  const textCount = documents.filter((d) => d.type === 'text' || d.type === 'markdown').length;
+  const textCount = documents.filter(
+    (d) => d.type === 'text' || d.type === 'markdown' || d.type === 'image'
+  ).length;
 
+  const totalVaultBytes = documents.reduce((acc, doc) => acc + (doc.size || 0), 0);
   const recentDocs = documents.slice(0, 5);
 
   const activeDoc = recentSession
@@ -54,7 +57,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.25 }}
+      transition={{ duration: 0.2 }}
       className="flex flex-col w-full space-y-4 pb-28 min-w-0"
     >
       {/* Welcome / Offline Hero Card */}
@@ -64,16 +67,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             OFFLINE VAULT
           </span>
           <span className="inline-flex items-center gap-1.5 font-sans text-xs text-[#58413f] dark:text-[#c8bead] font-medium shrink-0">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#249B65] border border-[#171717] inline-block animate-pulse"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#249B65] border border-[#171717] inline-block"></span>
             100% On-Device
           </span>
         </div>
 
         <h2 className="font-heading text-xl sm:text-2xl text-[#1d1c11] dark:text-[#f6f1de] tracking-tight font-bold mb-2">
-          Read anywhere, zero cloud.
+          Read any document offline.
         </h2>
         <p className="font-sans text-xs text-[#58413f] dark:text-[#c8bead] mb-4 leading-relaxed">
-          Instant, distraction-free access to your PDFs, technical specs, spreadsheets, and offline books.
+          Unified local reader for PDFs, Word, Excel, CSV, PowerPoint slides, Markdown, JSON, code, text, and images.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-2.5">
@@ -95,7 +98,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-xs uppercase tracking-wider retro-border retro-shadow cursor-pointer"
           >
             <FolderOpen className="w-4 h-4 text-[#58413f] dark:text-[#c8bead] shrink-0" />
-            <span className="truncate">BROWSE STORAGE</span>
+            <span className="truncate">BROWSE VAULT</span>
           </motion.button>
         </div>
       </div>
@@ -117,7 +120,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             { id: 'word', title: 'Word', count: `${wordCount} docs`, icon: FileText, bg: 'bg-[#3478D4]' },
             { id: 'excel', title: 'Sheets', count: `${excelCount} sheets`, icon: FileSpreadsheet, bg: 'bg-[#249B65]' },
             { id: 'powerpoint', title: 'Slides', count: `${slidesCount} decks`, icon: Presentation, bg: 'bg-[#D88B32]' },
-            { id: 'text', title: 'Text', count: `${textCount} files`, icon: FileCode, bg: 'bg-[#8A65C9]' },
+            { id: 'text', title: 'Text & Notes', count: `${textCount} files`, icon: FileCode, bg: 'bg-[#8A65C9]' },
           ].map((cat) => {
             const IconComp = cat.icon;
             return (
@@ -125,7 +128,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 key={cat.id}
                 whileTap={{ scale: 0.92 }}
                 whileHover={{ y: -2 }}
-                onClick={() => onSelectCategory(cat.id as any)}
+                onClick={() => onSelectCategory(cat.id as DocumentType)}
                 className="flex flex-col justify-between shrink-0 w-24 sm:w-28 p-3 rounded-2xl bg-white dark:bg-[#212019] retro-border retro-shadow text-left cursor-pointer transition-shadow min-w-0"
               >
                 <div className={`w-8 h-8 rounded-lg ${cat.bg} retro-border-sm flex items-center justify-center text-white mb-2 retro-shadow-sm shrink-0`}>
@@ -149,15 +152,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               CURRENT SESSION
             </span>
             <span className="font-sans text-xs text-[#58413f] dark:text-[#c8bead] flex items-center gap-1">
-              <BookOpen className="w-3.5 h-3.5 text-[var(--primary-red)] shrink-0" />
-              <span>Read 18m today</span>
+              <Clock className="w-3.5 h-3.5 text-[var(--primary-red)] shrink-0" />
+              <span>{formatDateLabel(activeDoc.modifiedAt)}</span>
             </span>
           </div>
 
           <div className="p-3.5 sm:p-4 rounded-2xl bg-[#f3eedc] dark:bg-[#333128] retro-border retro-shadow">
             <div className="flex items-center justify-between gap-2.5 mb-3 min-w-0">
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#E65C56] retro-border-sm flex items-center justify-center text-white shrink-0 retro-shadow-sm">
+                <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${getTypeBadgeConfig(activeDoc.type, activeDoc.extension).bgColor} retro-border-sm flex items-center justify-center text-white shrink-0 retro-shadow-sm`}>
                   <DocumentIcon typeKey={activeDoc.type} className="w-5 h-5" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -165,7 +168,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     {activeDoc.name}
                   </h3>
                   <p className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] truncate">
-                    Page {activeDoc.lastReadPage || 1} of {activeDoc.pageCount || 10} • {activeDoc.readProgress || 64}% read
+                    Page {activeDoc.lastReadPage ?? 1} of {activeDoc.pageCount ?? 1} • {activeDoc.readProgress ?? 0}% read
                   </p>
                 </div>
               </div>
@@ -185,8 +188,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <div className="w-full h-2.5 rounded-full bg-[#e7e2d1] dark:bg-[#474439] retro-border-sm p-0.5 overflow-hidden flex items-center">
               <motion.div
                 initial={{ width: 0 }}
-                animate={{ width: `${activeDoc.readProgress || 64}%` }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
+                animate={{ width: `${activeDoc.readProgress ?? 0}%` }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
                 style={{ backgroundColor: 'var(--primary-red)' }}
                 className="h-full rounded-full transition-colors"
               />
@@ -201,72 +204,77 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#ede8d6] dark:bg-[#3d3a30] retro-border-sm font-heading font-bold text-[11px] text-[#1d1c11] dark:text-[#f6f1de] uppercase tracking-wider retro-shadow-sm">
             RECENT DOCUMENTS
           </span>
-          <button
-            onClick={onViewAllFiles}
-            style={{ color: 'var(--primary-red)' }}
-            className="font-heading font-bold text-xs hover:underline flex items-center gap-0.5 cursor-pointer"
-          >
-            <span>VIEW ALL</span>
-            <ChevronRight className="w-4 h-4 shrink-0" />
-          </button>
+          {documents.length > 0 && (
+            <button
+              onClick={onViewAllFiles}
+              style={{ color: 'var(--primary-red)' }}
+              className="font-heading font-bold text-xs hover:underline flex items-center gap-0.5 cursor-pointer"
+            >
+              <span>VIEW ALL</span>
+              <ChevronRight className="w-4 h-4 shrink-0" />
+            </button>
+          )}
         </div>
 
-        {/* Documents Panel */}
-        <div className="bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl retro-border retro-shadow overflow-hidden divide-y-2 divide-[#171717] dark:divide-[#38352b]">
-          {recentDocs.map((doc) => {
-            const badge = getTypeBadgeConfig(doc.type, doc.extension);
-            return (
-              <motion.div
-                key={doc.id}
-                whileTap={{ scale: 0.99 }}
-                onClick={() => onOpenDocument(doc)}
-                className="p-3 flex items-center justify-between gap-2.5 hover:bg-[#f3eedc] dark:hover:bg-[#333128] transition-colors cursor-pointer min-w-0"
-              >
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div
-                    className={`w-9 h-9 rounded-xl ${badge.bgColor} retro-border-sm flex items-center justify-center text-white shrink-0 retro-shadow-sm`}
-                  >
-                    <DocumentIcon typeKey={badge.typeKey} className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="block font-heading font-bold text-xs sm:text-sm text-[#1d1c11] dark:text-[#f6f1de] truncate">
-                      {doc.name}
-                    </span>
-                    <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-                      <span className="px-1.5 py-0.2 rounded bg-[#e7e2d1] dark:bg-[#474439] retro-border-sm font-sans text-[9px] sm:text-[10px] text-[#58413f] dark:text-[#c8bead] font-bold uppercase shrink-0">
-                        {badge.label}
+        {recentDocs.length === 0 ? (
+          <div className="p-6 text-center bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl retro-border retro-shadow">
+            <FolderOpen className="w-10 h-10 text-[#58413f] dark:text-[#c8bead] mx-auto mb-2" />
+            <p className="font-heading font-bold text-sm text-[#1d1c11] dark:text-[#f6f1de] mb-1">
+              Your Offline Vault Is Empty
+            </p>
+            <p className="font-sans text-xs text-[#58413f] dark:text-[#c8bead]">
+              Tap "Open Document" above to import a PDF, Word, Excel, PowerPoint, or text file.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-[#f9f4e1] dark:bg-[#2b2921] rounded-2xl retro-border retro-shadow overflow-hidden divide-y-2 divide-[#171717] dark:divide-[#38352b]">
+            {recentDocs.map((doc) => {
+              const badge = getTypeBadgeConfig(doc.type, doc.extension);
+              return (
+                <motion.div
+                  key={doc.id}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={() => onOpenDocument(doc)}
+                  className="p-3 flex items-center justify-between gap-2.5 hover:bg-[#f3eedc] dark:hover:bg-[#333128] transition-colors cursor-pointer min-w-0"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div
+                      className={`w-9 h-9 rounded-xl ${badge.bgColor} retro-border-sm flex items-center justify-center text-white shrink-0 retro-shadow-sm`}
+                    >
+                      <DocumentIcon typeKey={badge.typeKey} className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="block font-heading font-bold text-xs sm:text-sm text-[#1d1c11] dark:text-[#f6f1de] truncate">
+                        {doc.name}
                       </span>
-                      <span className="font-sans text-[10px] sm:text-[11px] text-[#58413f] dark:text-[#c8bead] truncate">
-                        {formatFileSize(doc.size)} • {formatDateLabel(doc.modifiedAt)}
-                      </span>
+                      <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                        <span className="px-1.5 py-0.2 rounded bg-[#e7e2d1] dark:bg-[#474439] retro-border-sm font-sans text-[9px] sm:text-[10px] text-[#58413f] dark:text-[#c8bead] font-bold uppercase shrink-0">
+                          {badge.label}
+                        </span>
+                        <span className="font-sans text-[10px] sm:text-[11px] text-[#58413f] dark:text-[#c8bead] truncate">
+                          {formatFileSize(doc.size)} • {formatDateLabel(doc.modifiedAt)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                  <motion.button
-                    whileTap={{ scale: 0.85 }}
-                    onClick={(e) => onToggleFavorite(doc.id, e)}
-                    aria-label="Favorite"
-                    className={`w-8 h-8 rounded-lg bg-white dark:bg-[#212019] retro-border-sm flex items-center justify-center ${
-                      doc.isFavorite ? 'text-[#D88B32]' : 'text-[#58413f] dark:text-[#c8bead]'
-                    } retro-shadow-sm cursor-pointer`}
-                  >
-                    <Star className={`w-4 h-4 ${doc.isFavorite ? 'fill-current' : ''}`} />
-                  </motion.button>
-                  <motion.button
-                    whileTap={{ scale: 0.85 }}
-                    onClick={() => onOpenDocument(doc)}
-                    aria-label="Open document options"
-                    className="w-8 h-8 rounded-lg bg-white dark:bg-[#212019] retro-border-sm flex items-center justify-center text-[#58413f] dark:text-[#c8bead] retro-shadow-sm cursor-pointer"
-                  >
-                    <MoreVertical className="w-4 h-4" />
-                  </motion.button>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+                  <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <motion.button
+                      whileTap={{ scale: 0.85 }}
+                      onClick={(e) => onToggleFavorite(doc.id, e)}
+                      aria-label="Favorite"
+                      className={`w-8 h-8 rounded-lg bg-white dark:bg-[#212019] retro-border-sm flex items-center justify-center ${
+                        doc.isFavorite ? 'text-[#D88B32]' : 'text-[#58413f] dark:text-[#c8bead]'
+                      } retro-shadow-sm cursor-pointer`}
+                    >
+                      <Star className={`w-4 h-4 ${doc.isFavorite ? 'fill-current' : ''}`} />
+                    </motion.button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Tactile Storage Micro-Widget */}
@@ -276,8 +284,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <HardDrive className="w-5 h-5" />
           </div>
           <div className="min-w-0">
-            <p className="font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de] truncate">Internal Storage</p>
-            <p className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] truncate">Master Docs Local Storage Vault</p>
+            <p className="font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de] truncate">
+              Local Vault Storage
+            </p>
+            <p className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] truncate">
+              {documents.length} files • {formatFileSize(totalVaultBytes)} stored on device
+            </p>
           </div>
         </div>
         <motion.button

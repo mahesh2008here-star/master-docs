@@ -1,25 +1,31 @@
-export type DocumentType = 'pdf' | 'word' | 'excel' | 'powerpoint' | 'text' | 'markdown' | 'other';
+export type DocumentType =
+  | 'pdf'
+  | 'word'
+  | 'excel'
+  | 'powerpoint'
+  | 'text'
+  | 'markdown'
+  | 'image'
+  | 'other';
 
-export type FileExtension = 'pdf' | 'docx' | 'doc' | 'xlsx' | 'xls' | 'csv' | 'pptx' | 'ppt' | 'txt' | 'md' | string;
+export type FileExtension = string;
 
 export interface DocumentItem {
   id: string;
   name: string;
   extension: FileExtension;
   type: DocumentType;
+  mimeType?: string;
   size: number; // bytes
   modifiedAt: string;
   createdAt: string;
   isFavorite: boolean;
-  isLocked?: boolean;
-  pageCount?: number;
-  lastReadPage?: number;
-  readProgress?: number; // 0 - 100 percentage
-  dataUri?: string; // Base64 data or Blob URL
-  content?: string; // Text content if plain text / extracted text
-  arrayBuffer?: ArrayBuffer;
-  thumbnail?: string;
-  path?: string;
+  pageCount: number;
+  lastReadPage: number;
+  readProgress: number; // 0 - 100 percentage
+  dataUri?: string; // Legacy or backup serialization
+  content?: string; // Text, Markdown, or cached searchable text
+  arrayBuffer?: ArrayBuffer; // Primary local binary payload stored in IndexedDB
 }
 
 export interface ReadingSession {
@@ -30,21 +36,18 @@ export interface ReadingSession {
   totalPages: number;
   progressPercent: number;
   lastOpenedAt: string;
-  timeSpentSeconds: number;
 }
 
 export type ReaderTheme = 'parchment' | 'white' | 'sepia' | 'ink';
 
 export interface AppSettings {
   themeMode: 'system' | 'light' | 'dark';
-  accentColor: string; // e.g. '#a92f2e'
-  customAccentColor?: string; // hex color picker value
-  defaultZoom: number; // e.g. 100
+  accentColor: string;
+  customAccentColor?: string;
+  defaultZoom: number;
   pageSpacing: 'compact' | 'normal' | 'relaxed';
   continuousScroll: boolean;
   keepScreenAwake: boolean;
-  autoSaveProgress: boolean;
-  encryptVault: boolean;
 }
 
 export type NavigationTab = 'home' | 'files' | 'favourites' | 'recent' | 'settings' | 'search' | 'reader';

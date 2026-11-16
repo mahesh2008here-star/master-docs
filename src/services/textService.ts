@@ -1,37 +1,167 @@
+export function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function formatMarkdownToHtml(markdown: string): string {
   if (!markdown) return '';
 
-  return markdown
-    .split('\n')
-    .map((line) => {
-      const trimmed = line.trim();
-      if (!trimmed) return '<div class="h-2"></div>';
+  const lines = markdown.replace(/\r\n/g, '\n').split('\n');
+  const htmlParts: string[] = [];
+  let inCodeBlock = false;
+  let codeLines: string[] = [];
 
-      if (trimmed.startsWith('# ')) {
-        return `<h1 class="font-heading font-bold text-xl sm:text-2xl text-[#1d1c11] dark:text-[#f6f1de] mt-6 mb-3 tracking-tight border-b border-black/10 dark:border-white/10 pb-2">${trimmed.slice(2)}</h1>`;
-      }
-      if (trimmed.startsWith('## ')) {
-        return `<h2 class="font-heading font-bold text-lg sm:text-xl text-[#1d1c11] dark:text-[#f6f1de] mt-5 mb-2">${trimmed.slice(3)}</h2>`;
-      }
-      if (trimmed.startsWith('### ')) {
-        return `<h3 class="font-heading font-bold text-base text-[#1d1c11] dark:text-[#f6f1de] mt-4 mb-2">${trimmed.slice(4)}</h3>`;
-      }
-      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-        return `<li class="font-sans text-sm text-[#1d1c11] dark:text-[#f6f1de] ml-4 mb-1 list-disc">${trimmed.slice(2)}</li>`;
-      }
-      if (/^\d+\.\s/.test(trimmed)) {
-        return `<li class="font-sans text-sm text-[#1d1c11] dark:text-[#f6f1de] ml-4 mb-1 list-decimal">${trimmed.replace(/^\d+\.\s/, '')}</li>`;
-      }
-      if (trimmed.startsWith('> ')) {
-        return `<blockquote class="p-3 my-3 bg-black/5 dark:bg-white/5 rounded-xl border-l-4 border-[var(--primary-red)] italic text-xs sm:text-sm text-[#58413f] dark:text-[#c8bead] font-sans">${trimmed.slice(2)}</blockquote>`;
-      }
+  for (const rawLine of lines) {
+    const trimmed = rawLine.trim();
 
-      // Bold and inline code replacements
-      const formatted = trimmed
-        .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-[#1d1c11] dark:text-[#f6f1de]">$1</strong>')
-        .replace(/`(.*?)`/g, '<code class="px-1.5 py-0.5 bg-black/10 dark:bg-white/10 rounded text-[var(--primary-red)] font-mono text-xs font-bold">$1</code>');
+    if (trimmed.startsWith('```')) {
+      if (inCodeBlock) {
+        htmlParts.push(
+          `<pre class="p-3 my-3 rounded-xl bg-black/8 dark:bg-white/10 font-mono text-xs overflow-x-auto leading-relaxed"><code>${escapeHtml(codeLines.join('\n'))}</code></pre>`
+        );
+        codeLines = [];
+        inCodeBlock = false;
+      } else {
+        inCodeBlock = true;
+      }
+      continue;
+    }
 
-      return `<p class="font-sans text-sm text-[#1d1c11] dark:text-[#f6f1de] mb-3 leading-relaxed">${formatted}</p>`;
-    })
-    .join('');
+    if (inCodeBlock) {
+      codeLines.push(rawLine);
+      continue;
+    }
+
+    if (!trimmed) {
+      htmlParts.push('<div class="h-2"></div>');
+      continue;
+    }
+
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+      htmlParts.push('<hr class="my-4 border-black/15 dark:border-white/15" />');
+      continue;
+    }
+
+    if (trimmed.startsWith('# ')) {
+      htmlParts.push(
+        `<h1 class="font-heading font-bold text-xl sm:text-2xl mt-5 mb-3 tracking-tight border-b border-black/10 dark:border-white/10 pb-2">${escapeHtml(trimmed.slice(2))}</h1>`
+      );
+      continue;
+    }
+
+    if (trimmed.startsWith('## ')) {
+      htmlParts.push(
+        `<h2 class="font-heading font-bold text-lg sm:text-xl mt-4 mb-2">${escapeHtml(trimmed.slice(3))}</h2>`
+      );
+      continue;
+    }
+
+    if (trimmed.startsWith('### ')) {
+      htmlParts.push(
+        `<h3 class="font-heading font-bold text-base mt-3 mb-1.5">${escapeHtml(trimmed.slice(4))}</h3>`
+      );
+      continue;
+    }
+
+    if (trimmed.startsWith('> ')) {
+      htmlParts.push(
+        `<blockquote class="p-3 my-3 bg-black/5 dark:bg-white/5 rounded-xl border-l-4 border-[var(--primary-red)] italic text-xs sm:text-sm font-sans">${escapeHtml(trimmed.slice(2))}</blockquote>`
+      );
+      continue;
+    }
+
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      htmlParts.push(
+        `<li class="font-sans text-sm ml-4 mb-1 list-disc">${formatInlineMarkdown(trimmed.slice(2))}</li>`
+      );
+      continue;
+    }
+
+    if (/^\d+\.\s/.test(trimmed)) {
+      htmlParts.push(
+        `<li class="font-sans text-sm ml-4 mb-1 list-decimal">${formatInlineMarkdown(trimmed.replace(/^\d+\.\s/, ''))}</li>`
+      );
+      continue;
+    }
+
+    htmlParts.push(
+      `<p class="font-sans text-sm mb-3 leading-relaxed">${formatInlineMarkdown(trimmed)}</p>`
+    );
+  }
+
+  if (inCodeBlock && codeLines.length > 0) {
+    htmlParts.push(
+      `<pre class="p-3 my-3 rounded-xl bg-black/8 dark:bg-white/10 font-mono text-xs overflow-x-auto leading-relaxed"><code>${escapeHtml(codeLines.join('\n'))}</code></pre>`
+    );
+  }
+
+  return htmlParts.join('');
+}
+
+function formatInlineMarkdown(text: string): string {
+  return escapeHtml(text)
+    .replace(/\*\*(.+?)\*\*/g, '<strong class="font-bold">$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 bg-black/10 dark:bg-white/10 rounded text-[var(--primary-red)] font-mono text-xs font-bold">$1</code>');
+}
+
+export function formatCodeOrStructuredTextToHtml(raw: string, extension: string): string {
+  const ext = extension.toLowerCase();
+  if (ext === 'json') {
+    try {
+      const pretty = JSON.stringify(JSON.parse(raw), null, 2);
+      return `<pre class="p-3 rounded-xl bg-black/6 dark:bg-white/8 font-mono text-xs overflow-x-auto leading-relaxed whitespace-pre-wrap break-words"><code>${escapeHtml(pretty)}</code></pre>`;
+    } catch {
+      // Fall through to plain preformatted text
+    }
+  }
+
+  if (ext === 'html' || ext === 'htm') {
+    try {
+      const doc = new DOMParser().parseFromString(raw, 'text/html');
+      // Extract clean readable text structure safely without executing scripts or hiding inside tags
+      const blocks: string[] = [];
+      const nodes = Array.from(doc.body?.querySelectorAll('h1,h2,h3,h4,p,li,pre,blockquote') || []);
+      for (const node of nodes) {
+        const txt = node.textContent?.trim();
+        if (!txt) continue;
+        if (/^H[1-2]$/.test(node.tagName)) {
+          blocks.push(`<h2 class="font-heading font-bold text-lg mt-4 mb-2">${escapeHtml(txt)}</h2>`);
+        } else if (/^H[3-4]$/.test(node.tagName)) {
+          blocks.push(`<h3 class="font-heading font-bold text-base mt-3 mb-1">${escapeHtml(txt)}</h3>`);
+        } else if (node.tagName === 'PRE') {
+          blocks.push(`<pre class="p-3 my-2 rounded-xl bg-black/8 dark:bg-white/10 font-mono text-xs overflow-x-auto">${escapeHtml(txt)}</pre>`);
+        } else {
+          blocks.push(`<p class="font-sans text-sm mb-2.5 leading-relaxed">${escapeHtml(txt)}</p>`);
+        }
+      }
+      if (blocks.length > 0) return blocks.join('');
+    } catch {
+      // Fall through to source preview
+    }
+  }
+
+  if (
+    ['xml', 'js', 'jsx', 'ts', 'tsx', 'py', 'java', 'kt', 'c', 'cpp', 'h', 'css', 'sql', 'sh', 'yaml', 'yml', 'toml', 'ini', 'cfg', 'log'].includes(
+      ext
+    )
+  ) {
+    return `<pre class="p-3 rounded-xl bg-black/6 dark:bg-white/8 font-mono text-xs overflow-x-auto leading-relaxed whitespace-pre-wrap break-words"><code>${escapeHtml(raw)}</code></pre>`;
+  }
+
+  // Plain text (.txt and general text)
+  return raw
+    .replace(/\r\n/g, '\n')
+    .split('\n\n')
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map(
+      (block) =>
+        `<p class="font-sans text-sm mb-3 leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(block)}</p>`
+    )
+    .join('') || '<p class="text-sm opacity-75">Empty text file.</p>';
 }

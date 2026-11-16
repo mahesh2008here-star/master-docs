@@ -18,9 +18,19 @@ import {
   getAppSettings,
   saveAppSettings,
   seedDemoDocuments,
+  DEFAULT_SETTINGS,
+  getDB,
 } from './storage/db';
-import { getDocumentType } from './utils/fileHelpers';
-import { convertDocxToHtml } from './services/docxService';
+import {
+  dataUriToUint8Array,
+  decodeTextBytes,
+  detectDocumentFormat,
+  uint8ArrayToDataUri,
+} from './utils/fileHelpers';
+import { parseWordDocument } from './services/docxService';
+import { parseSpreadsheetBuffer } from './services/spreadsheetService';
+import { parsePptxArrayBuffer } from './services/presentationService';
+import { destroyPdfDocument, openPdfDocument } from './services/pdfService';
 import { requestAndroidStoragePermissions } from './services/permissionService';
 import { TopHeader } from './components/navigation/TopHeader';
 import { LiquidGlassDock } from './components/navigation/LiquidGlassDock';
@@ -32,27 +42,18 @@ import { SettingsScreen } from './screens/SettingsScreen';
 import { ReaderScreen } from './screens/ReaderScreen';
 import { SearchScreen } from './screens/SearchScreen';
 import { ConfirmModal } from './components/common/ConfirmModal';
+import { ToastBanner, ToastMessage } from './components/common/Toast';
 
 export default function App() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [recentSessions, setRecentSessions] = useState<ReadingSession[]>([]);
-  const [settings, setSettings] = useState<AppSettings>({
-    themeMode: 'light',
-    accentColor: '#a92f2e',
-    customAccentColor: '#a92f2e',
-    defaultZoom: 100,
-    pageSpacing: 'normal',
-    continuousScroll: true,
-    keepScreenAwake: true,
-    autoSaveProgress: true,
-    encryptVault: true,
-  });
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
 
   const [activeTab, setActiveTab] = useState<NavigationTab>('home');
   const [selectedDoc, setSelectedDoc] = useState<DocumentItem | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<DocumentType | 'all'>('all');
+  const [toast, setToast] = useState<ToastMessage | null>(null);
 
-  // Modal confirmation states
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -66,34 +67,49 @@ export default function App() {
   });
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
 
-  // Reset scroll position on active tab navigation
+  const notify = (type: 'success' | 'error' | 'info', message: string) => {
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+    setToast({ id: Date.now(), type, message });
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+    }, 3500);
+  };
+
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
   }, [activeTab]);
 
-  // Initialize DB and load documents & settings
   useEffect(() => {
     async function initVault() {
       try {
-        const loadedDocs = await getAllDocuments();
+        // Request native Android storage permissions cleanly on launch (no-op on web)
+        requestAndroidStoragePermissions().catch(() => {});
+
+        const [loadedDocs, loadedSessions, loadedSettings] = await Promise.all([
+          getAllDocuments(),
+          getRecentSessions(),
+          getAppSettings(),
+        ]);
+
         setDocuments(loadedDocs);
-
-        const loadedSessions = await getRecentSessions();
         setRecentSessions(loadedSessions);
-
-        const loadedSettings = await getAppSettings();
         setSettings(loadedSettings);
         applyTheme(loadedSettings.themeMode);
-        applyAccentColor(loadedSettings.customAccentColor || loadedSettings.accentColor || '#a92f2e');
+        applyAccentColor(
+          loadedSettings.customAccentColor || loadedSettings.accentColor || '#a92f2e'
+        );
       } catch (err) {
         console.error('Failed to initialize Master Docs storage:', err);
+        notify('error', 'Failed to initialize local document vault.');
       }
     }
     initVault();
   }, []);
 
-  // Sync theme changes with document element
   const applyTheme = (mode: 'system' | 'light' | 'dark') => {
     if (mode === 'dark') {
       document.documentElement.classList.add('dark');
@@ -101,11 +117,7 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     } else {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (prefersDark) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
+      document.documentElement.classList.toggle('dark', prefersDark);
     }
   };
 
@@ -122,7 +134,9 @@ export default function App() {
       applyTheme(newSettingsPartial.themeMode);
     }
     if (newSettingsPartial.customAccentColor || newSettingsPartial.accentColor) {
-      applyAccentColor(newSettingsPartial.customAccentColor || newSettingsPartial.accentColor || '#a92f2e');
+      applyAccentColor(
+        newSettingsPartial.customAccentColor || newSettingsPartial.accentColor || '#a92f2e'
+      );
     }
     await saveAppSettings(updated);
   };
@@ -147,231 +161,245 @@ export default function App() {
     };
   }, [activeTab]);
 
-  // Document Reading Action
   const handleOpenDocument = (doc: DocumentItem) => {
     setSelectedDoc(doc);
     setActiveTab('reader');
-    updateReadingProgress(doc.id, doc.lastReadPage || 1, doc.pageCount || 10).then(() => {
+    updateReadingProgress(doc.id, doc.lastReadPage || 1, doc.pageCount || 1).then(() => {
       getRecentSessions().then(setRecentSessions);
     });
   };
 
-  // Toggle Favorite
   const handleToggleFavorite = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const updatedDocs = documents.map((d) => {
-      if (d.id === id) {
-        return { ...d, isFavorite: !d.isFavorite };
-      }
-      return d;
-    });
-    setDocuments(updatedDocs);
+    setDocuments((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, isFavorite: !d.isFavorite } : d))
+    );
     await toggleFavorite(id);
   };
 
-  // Import local document handler using File API & DataURL/ArrayBuffer
+  // Unified sequential document importer with magic-byte sniffing & metadata extraction
   const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    const importedDocs: DocumentItem[] = [];
+    let failCount = 0;
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const extension = file.name.split('.').pop() || 'txt';
-      const docType = getDocumentType(extension);
+      try {
+        const rawBuffer = await file.arrayBuffer();
+        const bytes = new Uint8Array(rawBuffer);
+        const { type: docType, extension } = await detectDocumentFormat(bytes, file.name);
 
-      // Read arrayBuffer for binary formats
-      const arrayBuffer = await file.arrayBuffer();
+        let pageCount = 1;
+        let searchableContent: string | undefined;
 
-      if (docType === 'pdf') {
-        const reader = new FileReader();
-        reader.onload = async (evt) => {
-          const dataUri = evt.target?.result as string;
-          const newDoc: DocumentItem = {
-            id: 'doc-' + Date.now() + '-' + i,
-            name: file.name,
-            extension,
-            type: docType,
-            size: file.size,
-            modifiedAt: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
-            isFavorite: false,
-            pageCount: 1,
-            lastReadPage: 1,
-            readProgress: 0,
-            dataUri,
-            arrayBuffer,
-          };
-          await saveDocument(newDoc);
-          setDocuments((prev) => [newDoc, ...prev.filter((d) => d.id !== newDoc.id)]);
-          handleOpenDocument(newDoc);
-        };
-        reader.readAsDataURL(file);
-      } else if (docType === 'word') {
-        try {
-          const convertResult = await convertDocxToHtml(arrayBuffer);
-          const newDoc: DocumentItem = {
-            id: 'doc-' + Date.now() + '-' + i,
-            name: file.name,
-            extension,
-            type: docType,
-            size: file.size,
-            modifiedAt: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
-            isFavorite: false,
-            pageCount: 1,
-            lastReadPage: 1,
-            readProgress: 0,
-            content: convertResult.html,
-            arrayBuffer,
-          };
-          await saveDocument(newDoc);
-          setDocuments((prev) => [newDoc, ...prev.filter((d) => d.id !== newDoc.id)]);
-          handleOpenDocument(newDoc);
-        } catch (err) {
-          console.error('Word document conversion error:', err);
+        if (docType === 'pdf') {
+          try {
+            const pdfDoc = await openPdfDocument(bytes);
+            pageCount = pdfDoc.numPages || 1;
+            await destroyPdfDocument(pdfDoc);
+          } catch {
+            // Password-protected or complex PDF will prompt cleanly inside PdfViewer
+            pageCount = 1;
+          }
+        } else if (docType === 'word') {
+          try {
+            const parsed = await parseWordDocument(bytes, extension);
+            searchableContent = parsed.plainText;
+          } catch {
+            searchableContent = '';
+          }
+        } else if (docType === 'excel') {
+          try {
+            const parsed = parseSpreadsheetBuffer(bytes);
+            pageCount = Math.max(1, parsed.sheets.length);
+          } catch {
+            pageCount = 1;
+          }
+        } else if (docType === 'powerpoint') {
+          try {
+            const parsedSlides = await parsePptxArrayBuffer(bytes);
+            pageCount = Math.max(1, parsedSlides.length);
+            searchableContent = parsedSlides
+              .map((s) => `${s.title} ${s.bulletPoints.join(' ')}`)
+              .join('\n');
+          } catch {
+            pageCount = 1;
+          }
+        } else if (docType === 'text' || docType === 'markdown') {
+          searchableContent = decodeTextBytes(bytes);
+          pageCount = 1;
         }
-      } else if (docType === 'excel' || docType === 'powerpoint') {
-        const reader = new FileReader();
-        reader.onload = async (evt) => {
-          const dataUri = evt.target?.result as string;
-          const newDoc: DocumentItem = {
-            id: 'doc-' + Date.now() + '-' + i,
-            name: file.name,
-            extension,
-            type: docType,
-            size: file.size,
-            modifiedAt: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
-            isFavorite: false,
-            pageCount: 1,
-            lastReadPage: 1,
-            readProgress: 0,
-            dataUri,
-            arrayBuffer,
-          };
-          await saveDocument(newDoc);
-          setDocuments((prev) => [newDoc, ...prev.filter((d) => d.id !== newDoc.id)]);
-          handleOpenDocument(newDoc);
+
+        const nowIso = new Date().toISOString();
+        const newDoc: DocumentItem = {
+          id: `doc-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
+          name: file.name,
+          extension,
+          type: docType,
+          mimeType: file.type || undefined,
+          size: file.size,
+          modifiedAt: nowIso,
+          createdAt: nowIso,
+          isFavorite: false,
+          pageCount,
+          lastReadPage: 1,
+          readProgress: Math.round((1 / Math.max(1, pageCount)) * 100),
+          arrayBuffer: rawBuffer,
+          content: searchableContent,
         };
-        reader.readAsDataURL(file);
-      } else {
-        // Plain text / markdown / fallback
-        const reader = new FileReader();
-        reader.onload = async (evt) => {
-          const text = evt.target?.result as string;
-          const newDoc: DocumentItem = {
-            id: 'doc-' + Date.now() + '-' + i,
-            name: file.name,
-            extension,
-            type: docType,
-            size: file.size,
-            modifiedAt: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
-            isFavorite: false,
-            pageCount: Math.ceil((text || '').length / 1000) || 1,
-            lastReadPage: 1,
-            readProgress: 0,
-            content: text,
-            arrayBuffer,
-          };
-          await saveDocument(newDoc);
-          setDocuments((prev) => [newDoc, ...prev.filter((d) => d.id !== newDoc.id)]);
-          handleOpenDocument(newDoc);
-        };
-        reader.readAsText(file);
+
+        await saveDocument(newDoc);
+        importedDocs.push(newDoc);
+      } catch (err) {
+        console.error(`Failed importing file ${file.name}:`, err);
+        failCount++;
       }
+    }
+
+    if (importedDocs.length > 0) {
+      setDocuments((prev) => [...importedDocs.reverse(), ...prev]);
+      if (importedDocs.length === 1) {
+        handleOpenDocument(importedDocs[0]);
+      } else {
+        setActiveTab('files');
+        notify('success', `Imported ${importedDocs.length} documents into your vault.`);
+      }
+    }
+
+    if (failCount > 0) {
+      notify('error', `Could not read ${failCount} file(s).`);
     }
   };
 
-  const triggerFilePicker = async () => {
-    await requestAndroidStoragePermissions();
+  // Synchronous click preserves browser user-gesture activation on mobile Brave/Chrome
+  const triggerFilePicker = () => {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
       fileInputRef.current.click();
     }
   };
 
-  // Delete Document
   const handleDeleteDocument = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const docToDelete = documents.find((d) => d.id === id);
     setConfirmModal({
       isOpen: true,
       title: 'Delete Local Document',
-      message: `Are you sure you want to delete "${docToDelete?.name || 'this file'}" from your offline vault?`,
+      message: `Remove "${docToDelete?.name || 'this file'}" from your offline vault?`,
       action: async () => {
         await deleteDocument(id);
         setDocuments((prev) => prev.filter((d) => d.id !== id));
         setRecentSessions((prev) => prev.filter((s) => s.documentId !== id));
         setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        notify('info', 'Document removed from vault.');
       },
     });
   };
 
-  // Clear History
   const handleClearHistory = () => {
     setConfirmModal({
       isOpen: true,
       title: 'Clear Reading History',
-      message: 'Are you sure you want to clear your recent reading sessions? Your vault documents will remain safe.',
+      message: 'Clear your recent reading sessions? Your saved vault documents will remain intact.',
       action: async () => {
         await clearRecentSessions();
         setRecentSessions([]);
         setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        notify('success', 'Reading history cleared.');
       },
     });
   };
 
-  // Clear Cache
-  const handleClearCache = () => {
+  const handleClearAllDocuments = () => {
     setConfirmModal({
       isOpen: true,
-      title: 'Clear Application Cache',
-      message: 'This will purge temporary thumbnail caches and temporary session data.',
-      action: () => {
-        alert('Cache cleared successfully!');
+      title: 'Clear Entire Vault',
+      message: 'This will permanently delete all imported documents and reading history from this device.',
+      action: async () => {
+        const db = await getDB();
+        await db.clear('documents');
+        await db.clear('recents');
+        setDocuments([]);
+        setRecentSessions([]);
+        setSelectedDoc(null);
         setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        notify('info', 'Local document vault cleared.');
       },
     });
   };
 
-  // Export Backup
+  // Serialize binary ArrayBuffers as base64 dataUri cleanly so exported backups actually restore!
   const handleExportBackup = () => {
-    const backupData = JSON.stringify({ documents, settings, recentSessions }, null, 2);
-    const blob = new Blob([backupData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `MasterDocs_Vault_Backup_${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const serializableDocs = documents.map((doc) => {
+        const { arrayBuffer, ...rest } = doc;
+        let dataUri = doc.dataUri;
+        if (!dataUri && arrayBuffer && arrayBuffer.byteLength > 0) {
+          dataUri = uint8ArrayToDataUri(
+            new Uint8Array(arrayBuffer),
+            doc.mimeType || 'application/octet-stream'
+          );
+        }
+        return { ...rest, dataUri };
+      });
+
+      const backupData = JSON.stringify(
+        { documents: serializableDocs, settings, recentSessions },
+        null,
+        2
+      );
+      const blob = new Blob([backupData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `MasterDocs_Vault_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      notify('success', `Exported ${documents.length} document(s) to backup file.`);
+    } catch (err) {
+      console.error('Export backup error:', err);
+      notify('error', 'Failed to export vault backup.');
+    }
   };
 
-  // Import Backup
   const handleImportBackup = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e: any) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = async (evt) => {
-          try {
-            const data = JSON.parse(evt.target?.result as string);
-            if (data.documents && Array.isArray(data.documents)) {
-              for (const doc of data.documents) {
-                await saveDocument(doc);
-              }
-              setDocuments(await getAllDocuments());
-              alert('Backup restored successfully!');
-            }
-          } catch (err) {
-            alert('Invalid backup file format.');
+    input.accept = '.json,application/json';
+    input.onchange = (e: Event) => {
+      const target = e.target as HTMLInputElement;
+      const file = target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        try {
+          const data = JSON.parse(evt.target?.result as string);
+          if (!data.documents || !Array.isArray(data.documents)) {
+            throw new Error('Invalid backup structure');
           }
-        };
-        reader.readAsText(file);
-      }
+          for (const rawDoc of data.documents) {
+            const restored: DocumentItem = { ...rawDoc };
+            if (restored.dataUri && !restored.arrayBuffer) {
+              try {
+                const bytes = dataUriToUint8Array(restored.dataUri);
+                restored.arrayBuffer = bytes.buffer.slice(0) as ArrayBuffer;
+              } catch {
+                // Keep dataUri if decode fails
+              }
+            }
+            await saveDocument(restored);
+          }
+          setDocuments(await getAllDocuments());
+          notify('success', `Restored ${data.documents.length} document(s) from backup.`);
+        } catch {
+          notify('error', 'Invalid backup file format.');
+        }
+      };
+      reader.readAsText(file);
     };
     input.click();
   };
@@ -379,25 +407,26 @@ export default function App() {
   const handleSeedDemoDocs = async () => {
     const loaded = await seedDemoDocuments();
     setDocuments(loaded);
-    alert('Sample demo documents loaded into local vault!');
+    notify('success', 'Sample demo documents loaded into local vault.');
   };
 
   return (
     <div className="min-h-screen bg-[#fff9e7] dark:bg-[#181711] text-[#1d1c11] dark:text-[#f6f1de] flex flex-col font-sans overflow-x-hidden">
-      {/* Hidden system file picker input */}
+      {/* System file picker — unrestricted so Android MIME quirks never block opening any document */}
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleFileImport}
-        accept=".pdf,.docx,.doc,.xlsx,.xls,.csv,.pptx,.ppt,.txt,.md"
         multiple
         className="hidden"
       />
 
+      <ToastBanner toast={toast} onDismiss={() => setToast(null)} />
+
       {/* Sticky Top Header */}
       <TopHeader
         activeTab={activeTab}
-        subtitle={selectedDoc?.name}
+        subtitle={activeTab === 'reader' ? selectedDoc?.name : undefined}
         onOpenSearch={() => setActiveTab('search')}
         onBack={() => {
           if (activeTab === 'reader') {
@@ -461,7 +490,7 @@ export default function App() {
           <SettingsScreen
             settings={settings}
             onUpdateSettings={handleUpdateSettings}
-            onClearCache={handleClearCache}
+            onClearAllDocuments={handleClearAllDocuments}
             onClearHistory={handleClearHistory}
             onExportBackup={handleExportBackup}
             onImportBackup={handleImportBackup}
@@ -480,6 +509,7 @@ export default function App() {
         {activeTab === 'reader' && selectedDoc && (
           <ReaderScreen
             document={selectedDoc}
+            settings={settings}
             onBack={() => {
               setActiveTab('files');
               setSelectedDoc(null);
@@ -490,6 +520,7 @@ export default function App() {
               setDocuments(await getAllDocuments());
             }}
             onToggleFavorite={handleToggleFavorite}
+            onNotify={notify}
           />
         )}
       </main>

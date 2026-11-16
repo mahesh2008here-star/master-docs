@@ -1,6 +1,6 @@
 import { openDB, IDBPDatabase } from 'idb';
 import { DocumentItem, AppSettings, ReadingSession } from '../types/document';
-import { generateSamplePdfDataUri } from '../utils/fileHelpers';
+import { generateSamplePdfBytes, uint8ArrayToDataUri } from '../utils/fileHelpers';
 
 const DB_NAME = 'MasterDocsVault';
 const DB_VERSION = 1;
@@ -28,7 +28,6 @@ export function getDB(): Promise<IDBPDatabase<MasterDocsDBSchema>> {
   if (!dbPromise) {
     dbPromise = openDB<MasterDocsDBSchema>(DB_NAME, DB_VERSION, {
       upgrade(db) {
-        // Documents store
         if (!db.objectStoreNames.contains('documents')) {
           const docStore = db.createObjectStore('documents', { keyPath: 'id' });
           docStore.createIndex('by-name', 'name');
@@ -36,13 +35,11 @@ export function getDB(): Promise<IDBPDatabase<MasterDocsDBSchema>> {
           docStore.createIndex('by-favorite', 'isFavorite');
         }
 
-        // Recents store
         if (!db.objectStoreNames.contains('recents')) {
           const recentsStore = db.createObjectStore('recents', { keyPath: 'documentId' });
           recentsStore.createIndex('by-opened', 'lastOpenedAt');
         }
 
-        // Settings store
         if (!db.objectStoreNames.contains('settings')) {
           db.createObjectStore('settings');
         }
@@ -52,46 +49,6 @@ export function getDB(): Promise<IDBPDatabase<MasterDocsDBSchema>> {
   return dbPromise;
 }
 
-// Optional testing fixtures (used ONLY when explicitly triggered in Settings)
-export const DEMO_DOCUMENTS: DocumentItem[] = [
-  {
-    id: 'demo-doc-001',
-    name: 'Android_System_Architecture_v14.pdf',
-    extension: 'pdf',
-    type: 'pdf',
-    size: 19084000,
-    modifiedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-    isFavorite: true,
-    pageCount: 220,
-    lastReadPage: 42,
-    readProgress: 64,
-    dataUri: generateSamplePdfDataUri(),
-    content: `# Hardware Abstraction Layer & IPC
-Kernel 5.15 LTS • Project Treble HIDL/AIDL Specification
-
-ARCHIVAL SHEET #042
-
-The Android binder architecture serves as the cornerstone inter-process communication (IPC) mechanism across user-space sandboxes. By arbitrating process boundary transitions within the dedicated /dev/binder Linux character driver, the kernel implements zero-copy transaction deserialization, guaranteeing synchronous RPC isolation and strict memory safety primitives.`,
-  },
-  {
-    id: 'demo-doc-002',
-    name: 'Quarterly_Financial_Report_Q3.xlsx',
-    extension: 'xlsx',
-    type: 'excel',
-    size: 3565158,
-    modifiedAt: new Date(Date.now() - 3600000 * 2.5).toISOString(),
-    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-    isFavorite: true,
-    pageCount: 1,
-    readProgress: 100,
-    content: `Quarter,Revenue,Expenses,Net Profit,Growth
-Q1 2026,$1,250,000,$780,000,$470,000,12.4%
-Q2 2026,$1,480,000,$820,000,$660,000,18.4%
-Q3 2026,$1,890,000,$910,000,$980,000,27.7%`,
-  },
-];
-
 export const DEFAULT_SETTINGS: AppSettings = {
   themeMode: 'light',
   accentColor: '#a92f2e',
@@ -100,15 +57,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   pageSpacing: 'normal',
   continuousScroll: true,
   keepScreenAwake: true,
-  autoSaveProgress: true,
-  encryptVault: true,
 };
 
-// Database CRUD operations
 export async function getAllDocuments(): Promise<DocumentItem[]> {
   const db = await getDB();
   const docs = await db.getAll('documents');
-  return docs;
+  return docs.sort((a, b) => new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime());
 }
 
 export async function saveDocument(doc: DocumentItem): Promise<void> {
@@ -133,13 +87,19 @@ export async function toggleFavorite(id: string): Promise<boolean> {
   return false;
 }
 
-export async function updateReadingProgress(id: string, page: number, totalPages: number): Promise<void> {
+export async function updateReadingProgress(
+  id: string,
+  page: number,
+  totalPages: number
+): Promise<void> {
   const db = await getDB();
   const doc = await db.get('documents', id);
   if (doc) {
-    doc.lastReadPage = page;
-    doc.pageCount = totalPages || doc.pageCount || 1;
-    doc.readProgress = Math.min(100, Math.round((page / doc.pageCount) * 100));
+    const safeTotal = Math.max(1, totalPages || doc.pageCount || 1);
+    const safePage = Math.min(Math.max(1, page), safeTotal);
+    doc.lastReadPage = safePage;
+    doc.pageCount = safeTotal;
+    doc.readProgress = Math.min(100, Math.round((safePage / safeTotal) * 100));
     doc.modifiedAt = new Date().toISOString();
     await db.put('documents', doc);
 
@@ -147,11 +107,10 @@ export async function updateReadingProgress(id: string, page: number, totalPages
       documentId: id,
       documentName: doc.name,
       extension: doc.extension,
-      currentPage: page,
-      totalPages: doc.pageCount,
+      currentPage: safePage,
+      totalPages: safeTotal,
       progressPercent: doc.readProgress,
-      lastOpenedAt: new Date().toISOString(),
-      timeSpentSeconds: 120,
+      lastOpenedAt: doc.modifiedAt,
     };
     await db.put('recents', session);
   }
@@ -171,7 +130,7 @@ export async function clearRecentSessions(): Promise<void> {
 export async function getAppSettings(): Promise<AppSettings> {
   const db = await getDB();
   const settings = await db.get('settings', 'config');
-  return settings || DEFAULT_SETTINGS;
+  return settings ? { ...DEFAULT_SETTINGS, ...settings } : DEFAULT_SETTINGS;
 }
 
 export async function saveAppSettings(settings: AppSettings): Promise<void> {
@@ -180,9 +139,52 @@ export async function saveAppSettings(settings: AppSettings): Promise<void> {
 }
 
 export async function seedDemoDocuments(): Promise<DocumentItem[]> {
+  const samplePdfBytes = generateSamplePdfBytes();
+  const samplePdfBuffer = samplePdfBytes.buffer.slice(0) as ArrayBuffer;
+  const sampleCsvText = `Quarter,Revenue,Expenses,Net Profit,Growth
+Q1 2026,$1250000,$780000,$470000,12.4%
+Q2 2026,$1480000,$820000,$660000,18.4%
+Q3 2026,$1890000,$910000,$980000,27.7%`;
+
+  const demoDocs: DocumentItem[] = [
+    {
+      id: 'demo-doc-001',
+      name: 'Android_System_Architecture_v14.pdf',
+      extension: 'pdf',
+      type: 'pdf',
+      mimeType: 'application/pdf',
+      size: samplePdfBytes.byteLength,
+      modifiedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+      createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+      isFavorite: true,
+      pageCount: 1,
+      lastReadPage: 1,
+      readProgress: 100,
+      arrayBuffer: samplePdfBuffer,
+      dataUri: uint8ArrayToDataUri(samplePdfBytes, 'application/pdf'),
+      content:
+        'MASTER DOCS - Android System Architecture v14 Kernel 5.15 LTS Project Treble Specification Hardware Abstraction Layer & IPC Binder Architecture',
+    },
+    {
+      id: 'demo-doc-002',
+      name: 'Quarterly_Financial_Report_Q3.csv',
+      extension: 'csv',
+      type: 'excel',
+      mimeType: 'text/csv',
+      size: sampleCsvText.length,
+      modifiedAt: new Date(Date.now() - 3600000 * 2.5).toISOString(),
+      createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+      isFavorite: true,
+      pageCount: 1,
+      lastReadPage: 1,
+      readProgress: 100,
+      content: sampleCsvText,
+    },
+  ];
+
   const db = await getDB();
   const tx = db.transaction('documents', 'readwrite');
-  for (const doc of DEMO_DOCUMENTS) {
+  for (const doc of demoDocs) {
     await tx.store.put(doc);
   }
   await tx.done;

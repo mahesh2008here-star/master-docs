@@ -1,92 +1,91 @@
-import * as pdfjsLib from 'pdfjs-dist';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+import pdfjsWorkerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
 
-// Configure workerSrc for pdfjs-dist using cdnjs matching installed version
-if (typeof window !== 'undefined') {
+export type PDFDocumentProxy = pdfjsLib.PDFDocumentProxy;
+export type PDFPageProxy = pdfjsLib.PDFPageProxy;
+export type RenderTask = pdfjsLib.RenderTask;
+
+let workerConfigured = false;
+
+export function ensurePdfWorkerConfigured(): void {
+  if (workerConfigured || typeof window === 'undefined') return;
   try {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-  } catch (e) {
-    console.warn('Failed to assign pdfjs workerSrc:', e);
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
+    workerConfigured = true;
+  } catch (err) {
+    console.warn('Failed to assign local pdfjs workerSrc:', err);
   }
 }
 
-export interface RenderedPdfPage {
-  pageNumber: number;
-  canvasDataUrl?: string;
-  textContent: string;
+function getLocalPdfAssetUrl(folder: string): string {
+  if (typeof window === 'undefined') return `/pdfjs/${folder}/`;
+  return new URL(`pdfjs/${folder}/`, window.location.href).href;
 }
 
-export async function renderPdfPages(
-  dataUriOrArrayBuffer: string | ArrayBuffer,
-  maxPagesToShow = 50
-): Promise<{ totalPages: number; pages: RenderedPdfPage[] }> {
+export class PdfPasswordRequiredError extends Error {
+  public readonly incorrectPassword: boolean;
+  constructor(incorrectPassword = false) {
+    super(incorrectPassword ? 'Incorrect PDF password' : 'Password required to open PDF');
+    this.name = 'PdfPasswordRequiredError';
+    this.incorrectPassword = incorrectPassword;
+  }
+}
+
+export async function openPdfDocument(
+  bytes: Uint8Array,
+  password?: string
+): Promise<PDFDocumentProxy> {
+  ensurePdfWorkerConfigured();
+
+  // Always copy bytes before passing to pdfjs so worker transfer never detaches caller buffers
+  const safeCopy = new Uint8Array(bytes.byteLength);
+  safeCopy.set(bytes);
+
+  const loadingTask = pdfjsLib.getDocument({
+    data: safeCopy,
+    password: password || undefined,
+    cMapUrl: getLocalPdfAssetUrl('cmaps'),
+    cMapPacked: true,
+    standardFontDataUrl: getLocalPdfAssetUrl('standard_fonts'),
+    wasmUrl: getLocalPdfAssetUrl('wasm'),
+    iccUrl: getLocalPdfAssetUrl('iccs'),
+    useSystemFonts: true,
+    isOffscreenCanvasSupported: typeof OffscreenCanvas !== 'undefined',
+  });
+
   try {
-    let loadingTask;
-    if (typeof dataUriOrArrayBuffer === 'string') {
-      if (dataUriOrArrayBuffer.startsWith('data:')) {
-        const base64Str = dataUriOrArrayBuffer.split(',')[1] || dataUriOrArrayBuffer;
-        const binaryStr = atob(base64Str);
-        const bytes = new Uint8Array(binaryStr.length);
-        for (let i = 0; i < binaryStr.length; i++) {
-          bytes[i] = binaryStr.charCodeAt(i);
-        }
-        loadingTask = pdfjsLib.getDocument({ data: bytes.buffer });
-      } else {
-        loadingTask = pdfjsLib.getDocument({ url: dataUriOrArrayBuffer });
-      }
-    } else {
-      loadingTask = pdfjsLib.getDocument({ data: dataUriOrArrayBuffer });
+    return await loadingTask.promise;
+  } catch (err: any) {
+    if (err?.name === 'PasswordException') {
+      throw new PdfPasswordRequiredError(err?.code === 2);
     }
+    throw err;
+  }
+}
 
-    const pdfDoc = await loadingTask.promise;
-    const totalPages = pdfDoc.numPages;
-    const pagesToRender = Math.min(totalPages, maxPagesToShow);
-    const pages: RenderedPdfPage[] = [];
+export async function extractPdfPageText(
+  pdfDoc: PDFDocumentProxy,
+  pageNumber: number
+): Promise<string> {
+  const page = await pdfDoc.getPage(pageNumber);
+  const textContent = await page.getTextContent();
+  return textContent.items
+    .map((item: any) => (typeof item?.str === 'string' ? item.str : ''))
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-    for (let pageNum = 1; pageNum <= pagesToRender; pageNum++) {
-      try {
-        const page = await pdfDoc.getPage(pageNum);
-        const textContentObj = await page.getTextContent();
-        const textContent = textContentObj.items
-          .map((item: any) => item.str || '')
-          .join(' ');
-
-        // Render to high resolution canvas
-        const viewport = page.getViewport({ scale: 1.5 });
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-
-        if (context) {
-          const renderContext: any = {
-            canvasContext: context,
-            viewport: viewport,
-          };
-          await page.render(renderContext).promise;
-
-          pages.push({
-            pageNumber: pageNum,
-            canvasDataUrl: canvas.toDataURL('image/png'),
-            textContent,
-          });
-        } else {
-          pages.push({
-            pageNumber: pageNum,
-            textContent,
-          });
-        }
-      } catch (e) {
-        console.warn(`Error rendering PDF page ${pageNum}:`, e);
-        pages.push({
-          pageNumber: pageNum,
-          textContent: `[Page ${pageNum} rendered]`,
-        });
-      }
-    }
-
-    return { totalPages, pages };
-  } catch (error) {
-    console.error('Failed to parse PDF document with pdfjs-dist:', error);
-    throw error;
+export async function destroyPdfDocument(pdfDoc: PDFDocumentProxy | null): Promise<void> {
+  if (!pdfDoc) return;
+  try {
+    await pdfDoc.cleanup();
+  } catch {
+    // ignore cleanup error
+  }
+  try {
+    await pdfDoc.loadingTask?.destroy();
+  } catch {
+    // ignore destroy error
   }
 }

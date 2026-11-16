@@ -1,27 +1,27 @@
 import React, { useRef } from 'react';
 import { motion } from 'motion/react';
-import { 
-  Palette, 
-  Sun, 
-  Moon, 
-  Monitor, 
-  Check, 
-  Pipette, 
-  BookOpen, 
-  HardDrive, 
-  Trash2, 
-  History, 
-  Download, 
-  Upload, 
+import {
+  Palette,
+  Sun,
+  Moon,
+  Monitor,
+  Check,
+  Pipette,
+  BookOpen,
+  HardDrive,
+  Trash2,
+  History,
+  Download,
+  Upload,
   ShieldCheck,
-  FolderSync
+  FolderSync,
 } from 'lucide-react';
 import { AppSettings } from '../types/document';
 
 interface SettingsScreenProps {
   settings: AppSettings;
   onUpdateSettings: (newSettings: Partial<AppSettings>) => void;
-  onClearCache: () => void;
+  onClearAllDocuments: () => void;
   onClearHistory: () => void;
   onExportBackup: () => void;
   onImportBackup: () => void;
@@ -31,14 +31,13 @@ interface SettingsScreenProps {
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   settings,
   onUpdateSettings,
-  onClearCache,
+  onClearAllDocuments,
   onClearHistory,
   onExportBackup,
   onImportBackup,
   onSeedDemoDocs,
 }) => {
   const colorInputRef = useRef<HTMLInputElement | null>(null);
-
   const activeColor = settings.customAccentColor || settings.accentColor || '#a92f2e';
 
   return (
@@ -83,7 +82,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                 <motion.button
                   key={t.id}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => onUpdateSettings({ themeMode: t.id as any })}
+                  onClick={() => onUpdateSettings({ themeMode: t.id as AppSettings['themeMode'] })}
                   style={{
                     backgroundColor: isActive ? 'var(--primary-red)' : undefined,
                   }}
@@ -112,7 +111,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             </span>
           </div>
 
-          {/* Swatches List */}
           <div className="flex items-center gap-2 overflow-x-auto py-1 no-scrollbar shrink-0 min-w-0">
             {[
               { label: 'Terracotta', hex: '#a92f2e' },
@@ -147,7 +145,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             })}
           </div>
 
-          {/* Color Picker Card Trigger */}
           <div className="flex items-center justify-between p-3 bg-white dark:bg-[#212019] rounded-xl retro-border-sm retro-shadow-sm gap-2 min-w-0">
             <div className="flex items-center gap-2.5 min-w-0 flex-1">
               <div
@@ -156,7 +153,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               />
               <div className="flex flex-col min-w-0">
                 <span className="font-sans text-xs font-bold text-[#1d1c11] dark:text-[#f6f1de] truncate">
-                  Interactive Color Picker
+                  Custom Color Picker
                 </span>
                 <span className="font-sans text-[10px] text-[#58413f] dark:text-[#c8bead] truncate">
                   Updates buttons & indicators live
@@ -201,29 +198,61 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         {/* Default Zoom */}
         <div className="flex items-center justify-between gap-2 min-w-0">
           <div className="min-w-0 flex-1">
-            <span className="font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de] block truncate">Default Zoom Level</span>
-            <span className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] truncate block">Initial document magnification</span>
+            <span className="font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de] block truncate">
+              Default Zoom Level
+            </span>
+            <span className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] truncate block">
+              Initial document magnification
+            </span>
           </div>
           <select
             value={settings.defaultZoom}
             onChange={(e) => onUpdateSettings({ defaultZoom: Number(e.target.value) })}
             className="h-9 px-3 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-xs retro-border-sm retro-shadow-sm cursor-pointer shrink-0"
           >
-            <option value={75}>75%</option>
+            <option value={85}>85%</option>
             <option value={100}>100%</option>
-            <option value={125}>125%</option>
-            <option value={150}>150%</option>
+            <option value={115}>115%</option>
+            <option value={130}>130%</option>
+          </select>
+        </div>
+
+        {/* Page Spacing */}
+        <div className="flex items-center justify-between gap-2 pt-2 border-t border-black/5 dark:border-white/5 min-w-0">
+          <div className="min-w-0 flex-1">
+            <span className="font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de] block truncate">
+              Page Padding & Spacing
+            </span>
+            <span className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] truncate block">
+              Reader margin density
+            </span>
+          </div>
+          <select
+            value={settings.pageSpacing}
+            onChange={(e) =>
+              onUpdateSettings({ pageSpacing: e.target.value as AppSettings['pageSpacing'] })
+            }
+            className="h-9 px-3 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-xs retro-border-sm retro-shadow-sm cursor-pointer shrink-0"
+          >
+            <option value="compact">Compact</option>
+            <option value="normal">Normal</option>
+            <option value="relaxed">Relaxed</option>
           </select>
         </div>
 
         {/* Continuous Scroll Toggle */}
         <div className="flex items-center justify-between gap-2 pt-2 border-t border-black/5 dark:border-white/5 min-w-0">
           <div className="min-w-0 flex-1">
-            <span className="font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de] block truncate">Continuous Scrolling</span>
-            <span className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] truncate block">Seamless page stream</span>
+            <span className="font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de] block truncate">
+              Continuous PDF Scrolling
+            </span>
+            <span className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] truncate block">
+              Scroll all PDF pages vertically
+            </span>
           </div>
           <button
             onClick={() => onUpdateSettings({ continuousScroll: !settings.continuousScroll })}
+            aria-label="Toggle continuous scrolling"
             className={`w-12 h-7 rounded-full p-1 border-2 border-[#171717] transition-colors cursor-pointer shrink-0 ${
               settings.continuousScroll ? 'bg-[#249B65]' : 'bg-[#e7e2d1] dark:bg-[#474439]'
             }`}
@@ -239,11 +268,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         {/* Keep Screen Awake */}
         <div className="flex items-center justify-between gap-2 pt-2 border-t border-black/5 dark:border-white/5 min-w-0">
           <div className="min-w-0 flex-1">
-            <span className="font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de] block truncate">Keep Screen Awake</span>
-            <span className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] truncate block">Prevent display timeout</span>
+            <span className="font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de] block truncate">
+              Keep Screen Awake
+            </span>
+            <span className="font-sans text-[11px] text-[#58413f] dark:text-[#c8bead] truncate block">
+              Use Wake Lock while reading
+            </span>
           </div>
           <button
             onClick={() => onUpdateSettings({ keepScreenAwake: !settings.keepScreenAwake })}
+            aria-label="Toggle keep screen awake"
             className={`w-12 h-7 rounded-full p-1 border-2 border-[#171717] transition-colors cursor-pointer shrink-0 ${
               settings.keepScreenAwake ? 'bg-[#249B65]' : 'bg-[#e7e2d1] dark:bg-[#474439]'
             }`}
@@ -269,11 +303,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         <div className="grid grid-cols-2 gap-2.5 min-w-0">
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={onClearCache}
+            onClick={onClearAllDocuments}
             className="h-11 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-xs uppercase tracking-wider retro-border-sm retro-shadow-sm flex items-center justify-center gap-1.5 cursor-pointer min-w-0"
           >
             <Trash2 className="w-4 h-4 shrink-0" />
-            <span className="truncate">Clear Cache</span>
+            <span className="truncate">Clear Vault</span>
           </motion.button>
 
           <motion.button
@@ -291,7 +325,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             className="h-11 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-xs uppercase tracking-wider retro-border-sm retro-shadow-sm flex items-center justify-center gap-1.5 cursor-pointer min-w-0"
           >
             <Download className="w-4 h-4 shrink-0" />
-            <span className="truncate">Export Data</span>
+            <span className="truncate">Export Vault</span>
           </motion.button>
 
           <motion.button
@@ -300,14 +334,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             className="h-11 rounded-xl bg-white dark:bg-[#212019] text-[#1d1c11] dark:text-[#f6f1de] font-heading font-bold text-xs uppercase tracking-wider retro-border-sm retro-shadow-sm flex items-center justify-center gap-1.5 cursor-pointer min-w-0"
           >
             <Upload className="w-4 h-4 shrink-0" />
-            <span className="truncate">Restore Data</span>
+            <span className="truncate">Restore Vault</span>
           </motion.button>
         </div>
 
         {onSeedDemoDocs && (
           <div className="pt-2 border-t border-black/10 dark:border-white/10 flex flex-col gap-2">
             <span className="font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de]">
-              Testing & Evaluation
+              Sample Files
             </span>
             <motion.button
               whileTap={{ scale: 0.95 }}
@@ -326,12 +360,12 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         <div className="flex items-center gap-2 border-b border-black/10 dark:border-white/10 pb-2 min-w-0">
           <ShieldCheck className="w-5 h-5 text-[var(--primary-red)] shrink-0" />
           <h3 className="font-heading font-bold text-sm text-[#1d1c11] dark:text-[#f6f1de] uppercase tracking-wider truncate">
-            Privacy & Security
+            Privacy & Offline Guarantee
           </h3>
         </div>
 
         <p className="font-sans text-xs text-[#58413f] dark:text-[#c8bead] leading-relaxed">
-          MASTER DOCS is built with an absolute <strong>Zero-Cloud Guarantee</strong>. All document contents, bookmarks, reading history, and rendered pages remain encrypted strictly inside your local device storage (IndexedDB & Android Storage Access Framework). No documents are uploaded to external servers or AI services.
+          MASTER DOCS operates <strong>100% locally on your device</strong>. Imported files, bookmarks, and reading sessions are stored strictly in on-device IndexedDB storage without external servers or cloud uploads.
         </p>
       </div>
 
