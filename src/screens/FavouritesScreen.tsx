@@ -18,7 +18,7 @@ export const FavouritesScreen: React.FC<FavouritesScreenProps> = ({
   onToggleFavorite,
   onImportFile,
 }) => {
-  const favoriteDocs = documents.filter((d) => d.isFavorite);
+  const favoriteDocs = documents.filter((d) => d.isFavorite && !d.isPrivate);
 
   return (
     <motion.div

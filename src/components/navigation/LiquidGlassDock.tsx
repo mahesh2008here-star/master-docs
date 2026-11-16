@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Home, FolderOpen, Bookmark, Clock, Settings } from 'lucide-react';
+import { Home, ShieldCheck, Bookmark, Clock, Settings } from 'lucide-react';
 import { NavigationTab } from '../../types/document';
 import { AnimatedIcon } from '../common/AnimatedIcon';
 
@@ -12,7 +12,7 @@ interface LiquidGlassDockProps {
 export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({ activeTab, onSelectTab }) => {
   const tabs = [
     { id: 'home' as NavigationTab, label: 'Home', icon: Home },
-    { id: 'files' as NavigationTab, label: 'Files', icon: FolderOpen },
+    { id: 'vault' as NavigationTab, label: 'Vault', icon: ShieldCheck },
     { id: 'favourites' as NavigationTab, label: 'Saved', icon: Bookmark },
     { id: 'recent' as NavigationTab, label: 'Recent', icon: Clock },
     { id: 'settings' as NavigationTab, label: 'Settings', icon: Settings },
@@ -33,12 +33,11 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({ activeTab, onS
               <button
                 key={tab.id}
                 onClick={() => onSelectTab(tab.id)}
-                className="relative flex flex-col items-center justify-center min-w-[48px] sm:min-w-[56px] h-12 rounded-full cursor-pointer z-10 transition-colors"
+                className="relative flex flex-col items-center justify-center min-w-[50px] sm:min-w-[60px] h-12 rounded-full cursor-pointer z-10 transition-colors"
                 style={{
                   color: isActive ? 'var(--primary-red)' : undefined,
                 }}
               >
-                {/* Active tab background glow pill */}
                 {isActive && (
                   <motion.div
                     layoutId="dock-active-pill"
@@ -60,7 +59,7 @@ export const LiquidGlassDock: React.FC<LiquidGlassDockProps> = ({ activeTab, onS
                     fontWeight: isActive ? 700 : 500,
                   }}
                   transition={{ duration: 0.2 }}
-                  className={`font-sans text-[10px] sm:text-[11px] leading-none mt-1 ${
+                  className={`font-sans text-[10px] sm:text-[11px] leading-none mt-1 whitespace-nowrap ${
                     isActive ? 'text-[var(--primary-red)]' : 'text-[#58413f] dark:text-[#c8bead]'
                   }`}
                 >

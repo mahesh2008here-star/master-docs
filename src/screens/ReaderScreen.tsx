@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Bookmark,
@@ -44,6 +44,11 @@ import { shareDocumentFile } from '../services/shareService';
 import { UnsupportedFileView } from '../components/common/UnsupportedFileView';
 import { AnimatedIcon } from '../components/common/AnimatedIcon';
 import { PdfViewer } from '../components/readers/PdfViewer';
+import {
+  usePinchZoom,
+  MIN_DOCUMENT_ZOOM,
+  MAX_DOCUMENT_ZOOM,
+} from '../hooks/usePinchZoom';
 
 interface ReaderScreenProps {
   document: DocumentItem;
@@ -134,6 +139,30 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
   const [imageObjectUrl, setImageObjectUrl] = useState<string | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(doc.type !== 'pdf');
+
+  const pinchContainerRef = useRef<HTMLDivElement | null>(null);
+  const lastTapRef = useRef<number>(0);
+  const [zoomHudVisible, setZoomHudVisible] = useState<boolean>(false);
+
+  const { isPinching, gestureScale, displayZoom, handleDoubleTapZoom } = usePinchZoom({
+    targetRef: pinchContainerRef,
+    zoom,
+    onCommitZoom: (nextZoom) => {
+      setZoom(nextZoom);
+      setZoomHudVisible(true);
+    },
+    enabled: !loading && !parseError && doc.type !== 'other',
+  });
+
+  useEffect(() => {
+    if (isPinching) {
+      setZoomHudVisible(true);
+      return;
+    }
+    if (!zoomHudVisible) return;
+    const t = window.setTimeout(() => setZoomHudVisible(false), 950);
+    return () => window.clearTimeout(t);
+  }, [isPinching, zoom, zoomHudVisible]);
 
   // Sync bookmark & reset when opening a new document
   useEffect(() => {
@@ -333,8 +362,14 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
     if (currentPage > 1) goToPage(currentPage - 1);
   };
 
-  const handleZoomIn = () => setZoom((z) => Math.min(200, z + 15));
-  const handleZoomOut = () => setZoom((z) => Math.max(60, z - 15));
+  const handleZoomIn = () => {
+    setZoom((z) => Math.min(MAX_DOCUMENT_ZOOM, z + 15));
+    setZoomHudVisible(true);
+  };
+  const handleZoomOut = () => {
+    setZoom((z) => Math.max(MIN_DOCUMENT_ZOOM, z - 15));
+    setZoomHudVisible(true);
+  };
 
   const toggleBookmark = (e: React.MouseEvent) => {
     setIsBookmarked((prev) => !prev);
@@ -428,8 +463,8 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
               : `${doc.extension.toUpperCase()} Reader`}
           </span>
           <span className="text-[#58413f] dark:text-[#c8bead] shrink-0">•</span>
-          <span className="font-heading font-bold text-[10px] sm:text-[11px] text-[#58413f] dark:text-[#c8bead] shrink-0">
-            {zoom}%
+          <span className="font-heading font-bold text-[10px] sm:text-[11px] text-[#58413f] dark:text-[#c8bead] shrink-0 tabular-nums">
+            {displayZoom}%
           </span>
         </div>
 
@@ -654,8 +689,45 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
           </span>
         </div>
 
-        {/* INNER CONTENT PAGE AREA */}
-        <div className={`flex flex-col min-h-[420px] min-w-0 ${spacingClass}`}>
+        {/* INNER CONTENT PAGE AREA (Two-finger Pinch-to-Zoom enabled) */}
+        <div
+          ref={pinchContainerRef}
+          onTouchEnd={(e) => {
+            if (e.touches.length === 0 && e.changedTouches.length === 1) {
+              const now = Date.now();
+              if (now - lastTapRef.current < 260) {
+                lastTapRef.current = 0;
+                handleDoubleTapZoom();
+              } else {
+                lastTapRef.current = now;
+              }
+            }
+          }}
+          style={{ touchAction: 'pan-x pan-y' }}
+          className={`relative flex flex-col min-h-[420px] min-w-0 overflow-x-auto ${spacingClass}`}
+        >
+          {/* Floating Live Pinch Zoom Indicator HUD */}
+          <AnimatePresence>
+            {(isPinching || zoomHudVisible) && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="sticky top-2 self-center z-30 pointer-events-none px-3 py-1 rounded-full bg-[#1d1c11]/90 text-[#fff9e7] font-heading font-bold text-xs tabular-nums retro-border-sm shadow-md"
+              >
+                {displayZoom}%
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div
+            style={{
+              transform: isPinching ? `scale(${gestureScale})` : undefined,
+              transformOrigin: 'top center',
+              transition: isPinching ? 'none' : 'transform 0.12s ease-out',
+            }}
+            className="w-full min-w-0 flex flex-col"
+          >
           {doc.type === 'pdf' ? (
             <PdfViewer
               document={doc}
@@ -925,9 +997,10 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
                 On-Device Offline Reader
               </span>
             </div>
-            <div className="px-2.5 py-1 rounded bg-black/5 dark:bg-white/10 font-heading text-xs font-bold shrink-0">
+            <div className="px-2.5 py-1 rounded bg-black/5 dark:bg-white/10 font-heading text-xs font-bold shrink-0 tabular-nums">
               {currentPage} / {totalPages}
             </div>
+          </div>
           </div>
         </div>
       </article>
@@ -1080,8 +1153,8 @@ export const ReaderScreen: React.FC<ReaderScreenProps> = ({
               >
                 <Minus className="w-3.5 h-3.5" />
               </motion.button>
-              <span className="px-2 font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de]">
-                {zoom}%
+              <span className="px-2 font-heading font-bold text-xs text-[#1d1c11] dark:text-[#f6f1de] tabular-nums">
+                {displayZoom}%
               </span>
               <motion.button
                 whileTap={{ scale: 0.88 }}

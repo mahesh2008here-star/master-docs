@@ -21,6 +21,7 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({
     if (!query.trim()) return [];
     const q = query.toLowerCase();
     return documents.filter((doc) => {
+      if (doc.isPrivate) return false;
       return (
         doc.name.toLowerCase().includes(q) ||
         doc.extension.toLowerCase().includes(q) ||

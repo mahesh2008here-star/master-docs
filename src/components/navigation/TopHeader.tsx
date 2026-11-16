@@ -23,7 +23,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
   return (
     <header className="sticky top-0 left-0 right-0 z-40 w-full pt-safe bg-[#fff9e7]/95 dark:bg-[#181711]/95 backdrop-blur-xl border-b border-black/10 dark:border-white/10 shadow-xs">
-      <div className="h-16 px-3 sm:px-4 flex items-center justify-between gap-2 max-w-2xl mx-auto">
+      <div className="h-16 px-3 sm:px-4 flex items-center justify-between gap-2 max-w-4xl mx-auto">
         {/* Left Section: Back button & Title */}
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {isSubPage && onBack && (
@@ -31,14 +31,14 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               whileTap={{ scale: 0.9 }}
               onClick={onBack}
               aria-label="Navigate back"
-              className="w-9 h-9 rounded-xl bg-[#f9f4e1] dark:bg-[#2b2921] flex items-center justify-center text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm retro-shadow-sm cursor-pointer shrink-0"
+              className="w-10 h-10 rounded-xl bg-[#f9f4e1] dark:bg-[#2b2921] flex items-center justify-center text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm retro-shadow-sm cursor-pointer shrink-0"
             >
               <AnimatedIcon icon={ArrowLeft} className="w-5 h-5" />
             </motion.button>
           )}
 
           {/* Docs Badge */}
-          <div className="h-8 px-2 rounded-lg bg-[#f3eedc] dark:bg-[#333128] retro-border-sm border-[#171717] flex items-center justify-center gap-1.5 shrink-0 retro-shadow-sm">
+          <div className="h-9 px-2.5 rounded-lg bg-[#f3eedc] dark:bg-[#333128] retro-border-sm border-[#171717] flex items-center justify-center gap-1.5 shrink-0 retro-shadow-sm">
             <AnimatedIcon icon={BookOpen} className="w-4 h-4 text-[var(--primary-red)]" float />
             <span className="font-heading text-[10px] font-bold uppercase tracking-wider text-[#1d1c11] dark:text-[#f6f1de]">
               DOCS
@@ -51,7 +51,12 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               MASTER DOCS
             </span>
             <span className="font-sans text-[10px] uppercase tracking-widest text-[#58413f] dark:text-[#c8bead] truncate">
-              {subtitle || (activeTab === 'reader' ? 'Document View' : activeTab)}
+              {subtitle ||
+                (activeTab === 'reader'
+                  ? 'Document View'
+                  : activeTab === 'vault'
+                  ? 'Secure Vault'
+                  : activeTab)}
             </span>
           </div>
         </div>
@@ -63,7 +68,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
               whileTap={{ scale: 0.9 }}
               onClick={onOpenSearch}
               aria-label="Search documents"
-              className="w-9 h-9 rounded-xl bg-[#f9f4e1] dark:bg-[#2b2921] flex items-center justify-center text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm retro-shadow-sm cursor-pointer"
+              className="w-10 h-10 rounded-xl bg-[#f9f4e1] dark:bg-[#2b2921] flex items-center justify-center text-[#1d1c11] dark:text-[#f6f1de] retro-border-sm retro-shadow-sm cursor-pointer"
             >
               <AnimatedIcon icon={Search} className="w-4 h-4" />
             </motion.button>
@@ -73,7 +78,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
             whileTap={{ scale: 0.9 }}
             onClick={onOpenSettings}
             style={{ backgroundColor: 'var(--primary-red)' }}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-white shadow-xs cursor-pointer transition-colors shrink-0"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-xs cursor-pointer transition-colors shrink-0"
             title="Account & Settings"
           >
             <AnimatedIcon icon={User} className="w-4 h-4 text-white" />

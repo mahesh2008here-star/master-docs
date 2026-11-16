@@ -20,6 +20,8 @@ export interface DocumentItem {
   modifiedAt: string;
   createdAt: string;
   isFavorite: boolean;
+  isPrivate?: boolean; // Stored inside Secure Vault & hidden from Home/Recent/Search
+  devicePath?: string; // Native Android internal storage path for scanned documents
   pageCount: number;
   lastReadPage: number;
   readProgress: number; // 0 - 100 percentage
@@ -50,4 +52,24 @@ export interface AppSettings {
   keepScreenAwake: boolean;
 }
 
-export type NavigationTab = 'home' | 'files' | 'favourites' | 'recent' | 'settings' | 'search' | 'reader';
+export type VaultLockType = 'pin' | 'password';
+
+export interface VaultSecurityConfig {
+  lockType: VaultLockType;
+  salt: string;
+  secretHash: string;
+  securityQuestion: string;
+  answerHash: string;
+  failedAttempts: number;
+  lockoutUntil: number | null;
+  updatedAt: string;
+}
+
+export type NavigationTab =
+  | 'home'
+  | 'vault'
+  | 'favourites'
+  | 'recent'
+  | 'settings'
+  | 'search'
+  | 'reader';

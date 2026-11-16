@@ -1,9 +1,14 @@
 import { openDB, IDBPDatabase } from 'idb';
-import { DocumentItem, AppSettings, ReadingSession } from '../types/document';
+import {
+  DocumentItem,
+  AppSettings,
+  ReadingSession,
+  VaultSecurityConfig,
+} from '../types/document';
 import { generateSamplePdfBytes, uint8ArrayToDataUri } from '../utils/fileHelpers';
 
 const DB_NAME = 'MasterDocsVault';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export interface MasterDocsDBSchema {
   documents: {
@@ -19,6 +24,10 @@ export interface MasterDocsDBSchema {
   settings: {
     key: string;
     value: AppSettings;
+  };
+  vault_security: {
+    key: string;
+    value: VaultSecurityConfig;
   };
 }
 
@@ -43,6 +52,10 @@ export function getDB(): Promise<IDBPDatabase<MasterDocsDBSchema>> {
         if (!db.objectStoreNames.contains('settings')) {
           db.createObjectStore('settings');
         }
+
+        if (!db.objectStoreNames.contains('vault_security')) {
+          db.createObjectStore('vault_security');
+        }
       },
     });
   }
@@ -62,7 +75,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
 export async function getAllDocuments(): Promise<DocumentItem[]> {
   const db = await getDB();
   const docs = await db.getAll('documents');
-  return docs.sort((a, b) => new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime());
+  return docs.sort(
+    (a, b) => new Date(b.modifiedAt).getTime() - new Date(a.modifiedAt).getTime()
+  );
 }
 
 export async function saveDocument(doc: DocumentItem): Promise<void> {
@@ -87,6 +102,22 @@ export async function toggleFavorite(id: string): Promise<boolean> {
   return false;
 }
 
+export async function setDocumentPrivate(
+  id: string,
+  isPrivate: boolean
+): Promise<DocumentItem | null> {
+  const db = await getDB();
+  const doc = await db.get('documents', id);
+  if (!doc) return null;
+  doc.isPrivate = isPrivate;
+  if (isPrivate) {
+    // Remove from public recent reading history when moved to private vault
+    await db.delete('recents', id);
+  }
+  await db.put('documents', doc);
+  return doc;
+}
+
 export async function updateReadingProgress(
   id: string,
   page: number,
@@ -103,16 +134,19 @@ export async function updateReadingProgress(
     doc.modifiedAt = new Date().toISOString();
     await db.put('documents', doc);
 
-    const session: ReadingSession = {
-      documentId: id,
-      documentName: doc.name,
-      extension: doc.extension,
-      currentPage: safePage,
-      totalPages: safeTotal,
-      progressPercent: doc.readProgress,
-      lastOpenedAt: doc.modifiedAt,
-    };
-    await db.put('recents', session);
+    // Keep private vault documents hidden from recent sessions list
+    if (!doc.isPrivate) {
+      const session: ReadingSession = {
+        documentId: id,
+        documentName: doc.name,
+        extension: doc.extension,
+        currentPage: safePage,
+        totalPages: safeTotal,
+        progressPercent: doc.readProgress,
+        lastOpenedAt: doc.modifiedAt,
+      };
+      await db.put('recents', session);
+    }
   }
 }
 
@@ -138,6 +172,17 @@ export async function saveAppSettings(settings: AppSettings): Promise<void> {
   await db.put('settings', settings, 'config');
 }
 
+export async function getVaultSecurityConfig(): Promise<VaultSecurityConfig | null> {
+  const db = await getDB();
+  const cfg = await db.get('vault_security', 'lock_config');
+  return cfg || null;
+}
+
+export async function saveVaultSecurityConfig(config: VaultSecurityConfig): Promise<void> {
+  const db = await getDB();
+  await db.put('vault_security', config, 'lock_config');
+}
+
 export async function seedDemoDocuments(): Promise<DocumentItem[]> {
   const samplePdfBytes = generateSamplePdfBytes();
   const samplePdfBuffer = samplePdfBytes.buffer.slice(0) as ArrayBuffer;
@@ -157,6 +202,7 @@ Q3 2026,$1890000,$910000,$980000,27.7%`;
       modifiedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
       createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
       isFavorite: true,
+      isPrivate: false,
       pageCount: 1,
       lastReadPage: 1,
       readProgress: 100,
@@ -175,6 +221,7 @@ Q3 2026,$1890000,$910000,$980000,27.7%`;
       modifiedAt: new Date(Date.now() - 3600000 * 2.5).toISOString(),
       createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
       isFavorite: true,
+      isPrivate: false,
       pageCount: 1,
       lastReadPage: 1,
       readProgress: 100,
