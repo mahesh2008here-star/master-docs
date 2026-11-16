@@ -1,7 +1,35 @@
-![image alt](https://github.com/mahesh2008here-star/master-docs/blob/ae199cbac90878395bd3a3650b36702d4d6624cf/Screenshot_20261116-143629_MASTER%20DOCS.png)![image alt](https://github.com/mahesh2008here-star/master-docs/blob/main/Screenshot_20261116-143632_MASTER%20DOCS.png)![image alt](https://github.com/mahesh2008here-star/master-docs/blob/bb8e123e36ed24497f1b4f631a3cc8e46132050e/Screenshot_20261116-143637_MASTER%20DOCS.png)
-# MASTER DOCS — All-in-One Offline Android Document Reader
+<div align="center">
+  <h1>📄 MASTER DOCS</h1>
+  <p><b>All-in-One Offline Android Document Reader & Encrypted Vault</b></p>
+
+  <p>
+    <img src="https://img.shields.io/badge/Platform-Android%20%7C%20Web-green.svg" alt="Platform" />
+    <img src="https://img.shields.io/badge/Target%20SDK-API%2034%20(Android%2014)-blue.svg" alt="Target SDK" />
+    <img src="https://img.shields.io/badge/License-Apache%202.0-orange.svg" alt="License" />
+    <img src="https://img.shields.io/badge/Privacy-100%25%20On--Device-success.svg" alt="Privacy" />
+  </p>
+</div>
 
 **MASTER DOCS** is a production-grade, offline-first Android document reader featuring a distinctive retro tactile design language, a floating translucent liquid glass navigation dock, interactive Material color theme customization, and robust local document rendering.
+
+---
+
+## 📱 App Screenshots & Navigation Flow
+
+The interface is structured around an intuitive 5-tab floating liquid glass dock:
+
+<p align="center">
+  <img src="./Screenshot_20261116-143629_MASTER%20DOCS.png" width="19%" alt="01. Home & Library Hub" />
+  <img src="./Screenshot_20261116-143632_MASTER%20DOCS.png" width="19%" alt="02. Secure Encrypted Vault" />
+  <img src="./Screenshot_20261116-143633_MASTER%20DOCS.png" width="19%" alt="03. Saved Documents & Favourites" />
+  <img src="./Screenshot_20261116-143635_MASTER%20DOCS.png" width="19%" alt="04. Recent Reading History" />
+  <img src="./Screenshot_20261116-143637_MASTER%20DOCS.png" width="19%" alt="05. Appearance, Themes & Settings" />
+</p>
+
+| 1. 🏠 Home & Library | 2. 🔒 Secure Vault | 3. ⭐ Saved Documents | 4. 🕒 Recent History | 5. 🎨 Appearance & Themes |
+| :---: | :---: | :---: | :---: | :---: |
+| <img src="./Screenshot_20261116-143629_MASTER%20DOCS.png" width="180" alt="Home & Library Hub"/> | <img src="./Screenshot_20261116-143632_MASTER%20DOCS.png" width="180" alt="Secure Encrypted Vault"/> | <img src="./Screenshot_20261116-143633_MASTER%20DOCS.png" width="180" alt="Saved Documents"/> | <img src="./Screenshot_20261116-143635_MASTER%20DOCS.png" width="180" alt="Recent Reading History"/> | <img src="./Screenshot_20261116-143637_MASTER%20DOCS.png" width="180" alt="Settings & Appearance"/> |
+| **All Documents Hub**<br>Category breakdown (PDF, DOCX, XLSX, PPTX, TXT), storage scan & quick resume | **PIN / Password Vault**<br>Encrypted on-device vault hiding private files from search and history | **Saved / Favourites**<br>One-tap starred documents for quick access offline | **Recent Sessions**<br>Reading session history with automatic progress resumption | **Tactile Personalization**<br>Light / Dark Ink modes, interactive Material accent color picker |
 
 ---
 
@@ -72,13 +100,11 @@ This repository includes an automated GitHub Actions workflow (`.github/workflow
 To sign the release APK automatically during GitHub Actions builds, set the following **GitHub Secrets** in your repository (`Settings > Secrets and variables > Actions`):
 
 - `ANDROID_KEYSTORE_BASE64`: Base64-encoded string of your `.jks` or `.keystore` file.
-- `ANDROID_KEYSTORE_PASSWORD`: Keystore pass
-- word.
+- `ANDROID_KEYSTORE_PASSWORD`: Keystore password.
 - `ANDROID_KEY_ALIAS`: Key alias name.
 - `ANDROID_KEY_PASSWORD`: Key password.
 
 *If signing secrets are not configured, the GitHub Actions workflow produces a functional unsigned release APK.*
-
 
 ---
 
@@ -92,5 +118,4 @@ To sign the release APK automatically during GitHub Actions builds, set the foll
 ---
 
 ## 📜 License
-Apache-2.0 License. Built for offline document priva
-
+Apache-2.0 License. Built for offline document privacy.
