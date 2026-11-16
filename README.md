@@ -1,5 +1,6 @@
 ![image alt](https://github.com/mahesh2008here-star/master-docs/blob/ae199cbac90878395bd3a3650b36702d4d6624cf/Screenshot_20261116-143629_MASTER%20DOCS.png)
 ![image alt](https://github.com/mahesh2008here-star/master-docs/blob/main/Screenshot_20261116-143632_MASTER%20DOCS.png)
+![image alt](https://github.com/mahesh2008here-star/master-docs/blob/bb8e123e36ed24497f1b4f631a3cc8e46132050e/Screenshot_20261116-143637_MASTER%20DOCS.png)
 # MASTER DOCS — All-in-One Offline Android Document Reader
 
 **MASTER DOCS** is a production-grade, offline-first Android document reader featuring a distinctive retro tactile design language, a floating translucent liquid glass navigation dock, interactive Material color theme customization, and robust local document rendering.
